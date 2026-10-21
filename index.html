@@ -1,0 +1,2857 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950" id="htmlRoot">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="htmlPageTitle">Enterprise Multi-Project GRM & Stakeholder System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS (XLSX Export) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- html2pdf.js (PDF Report Export) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { 
+                        navy: { 800: '#1e293b', 900: '#0f172a' },
+                        brand: { 500: '#2563eb', 600: '#1d4ed8' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.1); }
+        ::-webkit-scrollbar-thumb { background: rgba(37, 99, 235, 0.4); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(37, 99, 235, 0.7); }
+        
+        .glass-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dark .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 1px 1px rgba(255, 255, 255, 0.05) inset;
+        }
+        .dark .glass-card:hover {
+            box-shadow: 0 20px 40px -10px rgba(37, 99, 235, 0.25), 0 0 1px 1px rgba(37, 99, 235, 0.3) inset;
+        }
+
+        html:not(.dark) .glass-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 0 1px 1px rgba(255, 255, 255, 1) inset;
+        }
+        html:not(.dark) .glass-card:hover {
+            box-shadow: 0 20px 35px -10px rgba(37, 99, 235, 0.12);
+        }
+
+        .quadrant-box { transition: all 0.3s ease; }
+        .quadrant-box.drag-over { background-color: rgba(16, 185, 129, 0.15) !important; border-color: #10b981 !important; border-style: dashed !important; transform: scale(1.01); }
+        .stakeholder-card { cursor: grab; user-select: none; }
+        .stakeholder-card:active { cursor: grabbing; }
+
+        .btn-3d {
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.39);
+        }
+        .btn-3d:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.54);
+        }
+        .btn-3d:active {
+            transform: translateY(1px);
+        }
+    </style>
+</head>
+<body class="h-full font-sans text-slate-900 dark:text-slate-100 flex flex-col antialiased selection:bg-blue-600 selection:text-white bg-slate-100 dark:bg-slate-950">
+
+    <!-- AUTHENTICATION OVERLAY / LOGIN & PUBLIC TRACKER MODAL -->
+    <div id="authModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto">
+        <div class="glass-card rounded-2xl w-full max-w-lg overflow-hidden my-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl">
+            <div class="bg-slate-900 text-white p-6 text-center space-y-3 border-b border-slate-800">
+                <!-- Enlarged, clean white logo frame without purple backgrounds -->
+                <div id="authModalLogoContainer" class="inline-flex p-2 bg-white rounded-2xl shadow-lg border-2 border-slate-200 items-center justify-center overflow-hidden w-24 h-24 mx-auto cursor-pointer" title="System Brand Logo">
+                    <i class="fa-solid fa-shield-halved text-4xl text-slate-900" id="authModalLogoIcon"></i>
+                </div>
+                <h2 class="text-xl font-bold tracking-tight text-white mt-2" id="authModalTitleText">NexusGRM Enterprise Portal</h2>
+                <p class="text-xs text-slate-400">Secure Role-Based Staff Authentication or Public Grievance Portal</p>
+            </div>
+            
+            <!-- Auth Tabs Switcher -->
+            <div class="flex border-b border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/40">
+                <button onclick="switchAuthTab('staff')" id="authTabStaff" class="flex-1 py-3 text-xs font-bold text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 bg-white dark:bg-slate-900/60 transition">Staff Login (Role-Based)</button>
+                <button onclick="switchAuthTab('public')" id="authTabPublic" class="flex-1 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition">Public Grievance Tracker</button>
+            </div>
+
+            <!-- STAFF LOGIN FORM -->
+            <div id="staffLoginSection" class="p-6 space-y-4">
+                <form onsubmit="handleLogin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Username / ID *</label>
+                        <input type="text" id="loginUsername" placeholder="Enter assigned username or staff ID" required class="w-full text-xs px-3.5 py-3 bg-white dark:bg-slate-900/80 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none transition shadow-sm">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Password *</label>
+                            <button type="button" onclick="openModal('forgotPasswordModal')" class="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline">Forgot / Password Request?</button>
+                        </div>
+                        <input type="password" id="loginPassword" placeholder="Enter provided password" required class="w-full text-xs px-3.5 py-3 bg-white dark:bg-slate-900/80 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none transition shadow-sm">
+                    </div>
+
+                    <div class="pt-2">
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-3.5 rounded-xl transition shadow-lg shadow-blue-600/30 flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-right-to-bracket"></i>
+                            <span>Authenticate & Launch Workspace</span>
+                        </button>
+                    </div>
+                </form>
+                <div class="bg-slate-100 dark:bg-slate-900/30 p-3 rounded-xl text-center border border-slate-200 dark:border-slate-800">
+                    <p class="text-[11px] text-slate-600 dark:text-slate-400" id="footerBrandingText">&copy; All rights reserved 2026.</p>
+                </div>
+            </div>
+
+            <!-- PUBLIC GRIEVANCE & TRACKER SECTION -->
+            <div id="publicPortalSection" class="p-6 space-y-4 hidden">
+                <div class="bg-slate-100 dark:bg-slate-800 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 shadow-sm">
+                    <p class="font-bold mb-0.5"><i class="fa-solid fa-bullhorn mr-1 text-blue-500"></i> Public Grievance Portal</p>
+                    Share your project grievance to receive automated SMS/Email updates on status (Open, Investigation, Review, Closed).
+                </div>
+
+                <div class="flex border-b border-slate-200 dark:border-slate-700/50">
+                    <button onclick="switchPublicMode('submit')" id="pubModeSubmitBtn" class="flex-1 pb-2 text-xs font-bold text-blue-600 dark:text-blue-400 border-b-2 border-blue-600">Share New Grievance</button>
+                    <button onclick="switchPublicMode('track')" id="pubModeTrackBtn" class="flex-1 pb-2 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">Track Case Status</button>
+                </div>
+
+                <!-- Public Submit Form -->
+                <form id="publicSubmitForm" onsubmit="handlePublicGrievanceSubmit(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Select Project *</label>
+                        <select id="pubProjectSelect" required class="w-full text-xs px-3 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none"></select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Your Full Name *</label>
+                            <input type="text" id="pubComplainant" required placeholder="Enter full name" class="w-full text-xs px-3 py-2.5 bg-white dark:bg-slate-900/80 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Category *</label>
+                            <select id="pubCategory" required class="w-full text-xs px-3 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none">
+                                <option value="Land Compensation">Land & Property Compensation</option>
+                                <option value="Environmental">Environmental / Noise / Dust</option>
+                                <option value="Labor & Safety">Labor & Safety Concerns</option>
+                                <option value="Community Access">Community Access Rights</option>
+                                <option value="Cultural Heritage">Cultural & Social Impact</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Phone (For SMS Alerts)</label>
+                            <input type="text" id="pubPhone" placeholder="Enter phone number" class="w-full text-xs px-3 py-2.5 bg-white dark:bg-slate-900/80 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Email (For Email Alerts)</label>
+                            <input type="email" id="pubEmail" placeholder="Enter email address" class="w-full text-xs px-3 py-2.5 bg-white dark:bg-slate-900/80 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Detailed Description *</label>
+                        <textarea id="pubSummary" required rows="3" placeholder="Describe your issue clearly..." class="w-full text-xs p-3 bg-white dark:bg-slate-900/80 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none"></textarea>
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-3 rounded-xl transition shadow-lg shadow-emerald-600/30">
+                        <i class="fa-solid fa-paper-plane mr-1.5"></i> Submit Grievance & Get Tracking ID
+                    </button>
+                </form>
+
+                <!-- Public Track Form -->
+                <div id="publicTrackSection" class="space-y-3 hidden">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Enter Case Tracking ID *</label>
+                        <div class="flex space-x-2">
+                            <input type="text" id="trackCaseIdInput" placeholder="Enter tracking ID" class="flex-1 text-xs px-3 py-2.5 bg-white dark:bg-slate-900/80 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none uppercase font-mono">
+                            <button onclick="trackCaseStatus()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition shadow-md">Search</button>
+                        </div>
+                    </div>
+                    <div id="trackResultContainer" class="p-3.5 bg-slate-50 dark:bg-slate-950/80 rounded-xl border border-slate-200 dark:border-slate-800 text-xs space-y-2 hidden shadow-sm">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: FORGOT / PASSWORD REQUEST -->
+    <div id="forgotPasswordModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[110] flex items-center justify-center hidden p-4">
+        <div class="glass-card rounded-2xl w-full max-w-md overflow-hidden shadow-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div class="bg-slate-900 text-white p-4 flex justify-between items-center border-b border-slate-800">
+                <h3 class="font-bold text-xs flex items-center text-white"><i class="fa-solid fa-key mr-2 text-amber-400"></i> Request Password Reset</h3>
+                <button onclick="closeModal('forgotPasswordModal')" class="text-slate-400 hover:text-white text-lg">&times;</button>
+            </div>
+            <form onsubmit="handlePasswordRequestSubmit(event)" class="p-5 space-y-4">
+                <p class="text-xs text-slate-600 dark:text-slate-300">Submit your registered Username or Full Name. The Director/Management will receive a notification and generate a new password for you.</p>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Your Username or Full Name *</label>
+                    <input type="text" id="reqUserIdentifier" placeholder="e.g., field_staff or John Doe" required class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Note to Director (Optional)</label>
+                    <input type="text" id="reqUserNote" placeholder="e.g. Lost device, need password reset" class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                </div>
+                <div class="flex justify-end space-x-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                    <button type="button" onclick="closeModal('forgotPasswordModal')" class="px-3.5 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-500 rounded-xl shadow-md transition flex items-center"><i class="fa-solid fa-paper-plane mr-1.5"></i> Send Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: CUSTOMIZE SYSTEM BRANDING (LOGO & TITLE) -->
+    <div id="customizeBrandingModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[120] flex items-center justify-center hidden p-4">
+        <div class="glass-card rounded-2xl w-full max-w-md overflow-hidden shadow-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div class="bg-slate-900 text-white p-4.5 flex justify-between items-center border-b border-slate-800">
+                <h3 class="font-bold text-sm flex items-center text-white"><i class="fa-solid fa-paintbrush mr-2 text-blue-400"></i> Customize System Branding</h3>
+                <button onclick="closeModal('customizeBrandingModal')" class="text-slate-400 hover:text-white text-lg">&times;</button>
+            </div>
+            <form onsubmit="saveCustomBranding(event)" class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">System Title *</label>
+                    <input type="text" id="brandTitleInput" placeholder="e.g., JohnGeo Solutions GRM" required class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">System Subtitle / Tagline</label>
+                    <input type="text" id="brandSubtitleInput" placeholder="e.g., Stakeholder Engagement & Grievance System" class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Company Logo Image (PNG / JPG / SVG)</label>
+                    <input type="file" id="brandLogoFile" accept="image/*" class="w-full text-xs text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-100 dark:file:bg-slate-800 file:text-slate-700 dark:file:text-slate-300 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Logo image displays enlarged on clean white frame without background clashing.</p>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+                    <button type="button" onclick="closeModal('customizeBrandingModal')" class="px-3.5 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">Cancel</button>
+                    <button type="submit" class="btn-3d px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-md transition">Save Branding</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <div class="flex items-center space-x-4">
+                    <!-- ENLARGED CLEAN WHITE LOGO CONTAINER (PURPLE TINTS PURGED) -->
+                    <div id="headerLogoContainer" class="w-14 h-14 flex items-center justify-center p-1.5 bg-white rounded-xl shadow-md border-2 border-slate-200 overflow-hidden cursor-pointer flex-shrink-0" onclick="openBrandingModal()" title="Click to customize logo">
+                        <i class="fa-solid fa-diagram-project text-3xl text-slate-900" id="headerLogoIcon"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold tracking-tight text-white leading-none" id="headerTitleText">NexusGRM Enterprise</h1>
+                        <p class="text-[11px] text-slate-400 mt-1" id="headerUserRoleSub">Stakeholder Engagement & Grievance Redress System</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <!-- Global Project Selector -->
+                    <div class="flex items-center space-x-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-xl shadow-inner">
+                        <i class="fa-solid fa-folder-tree text-blue-400 text-sm"></i>
+                        <span class="text-xs font-medium text-slate-300">Project:</span>
+                        <select id="globalProjectSelect" onchange="handleProjectChange(this.value)" class="bg-slate-900 text-white dark:bg-slate-900 dark:text-white text-xs font-semibold focus:outline-none cursor-pointer py-1 px-2 rounded-lg border border-slate-700">
+                            <option value="ALL" class="bg-slate-900 text-white">All Enterprise Projects</option>
+                        </select>
+                    </div>
+
+                    <!-- NOTIFICATION BELL WITH UNREAD BADGE DROPDOWN -->
+                    <div class="relative">
+                        <button onclick="toggleNotificationDropdown()" id="notifBellBtn" title="Grievance Notifications & Alerts" class="p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-slate-300 hover:text-white transition shadow-sm relative">
+                            <i class="fa-solid fa-bell text-sm"></i>
+                            <span id="notifUnreadBadge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center border-2 border-slate-900">0</span>
+                        </button>
+                        
+                        <!-- NOTIFICATION DROPDOWN MENU -->
+                        <div id="notifDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                            <div class="p-3 bg-slate-900 text-white flex justify-between items-center border-b border-slate-800">
+                                <h4 class="text-xs font-bold flex items-center"><i class="fa-solid fa-bell text-amber-400 mr-2"></i> Grievance Alerts</h4>
+                                <button onclick="markAllNotificationsRead()" class="text-[10px] text-blue-400 hover:underline">Mark all read</button>
+                            </div>
+                            <div class="max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800" id="notifListContainer">
+                                <p class="text-xs text-slate-500 dark:text-slate-400 p-4 text-center">No new grievance alerts.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Theme Switcher Toggle -->
+                    <button onclick="toggleTheme()" id="themeToggleBtn" title="Switch Theme" class="p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-slate-300 hover:text-white transition shadow-sm">
+                        <i class="fa-solid fa-moon text-sm" id="themeIcon"></i>
+                    </button>
+
+                    <!-- User Profile & Logout -->
+                    <div class="flex items-center space-x-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-xl shadow-inner">
+                        <i class="fa-solid fa-user-tie text-blue-400 text-sm"></i>
+                        <span class="text-xs font-bold text-slate-200" id="currentLoggedUserBadge">User</span>
+                        <button onclick="logoutSession()" title="Switch Account / Logout" class="text-slate-400 hover:text-white text-xs ml-1 pl-2 border-l border-slate-700">
+                            <i class="fa-solid fa-power-off"></i>
+                        </button>
+                    </div>
+
+                    <div id="topActionButtons" class="hidden sm:flex items-center space-x-2">
+                        <button onclick="openModal('addGrievanceModal')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition flex items-center shadow-md shadow-emerald-600/20">
+                            <i class="fa-solid fa-plus-circle mr-1.5"></i> Log Grievance
+                        </button>
+                        <button onclick="openModal('addStakeholderModal')" class="btn-3d bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition flex items-center">
+                            <i class="fa-solid fa-user-plus mr-1.5"></i> Add Stakeholder
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- REAL-TIME NEW GRIEVANCE POPUP ALERT BANNER -->
+    <div id="realtimeGrievanceAlertBanner" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <div class="bg-slate-900 text-white p-3.5 rounded-2xl shadow-xl border border-slate-800 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-amber-500/20 text-amber-400 rounded-xl backdrop-blur-md animate-pulse"><i class="fa-solid fa-triangle-exclamation text-lg"></i></div>
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-amber-400">New Grievance Registered Alert!</h4>
+                    <p class="text-xs text-slate-300" id="alertBannerMessage">A new grievance has been logged into the system.</p>
+                </div>
+            </div>
+            <button onclick="dismissAlertBanner()" class="text-white hover:text-slate-200 text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-xl border border-slate-700 transition">Dismiss</button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="flex-1 flex max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 gap-6">
+
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 flex-shrink-0 hidden md:block">
+            <div class="glass-card rounded-2xl p-4 sticky top-22 space-y-6">
+                <div>
+                    <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 px-3">Navigation</p>
+                    <nav class="space-y-1" id="sidebarNav">
+                        <a href="#" onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item active flex items-center px-3 py-2.5 text-xs font-semibold rounded-xl text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/40 shadow-inner">
+                            <i class="fa-solid fa-chart-pie w-6 text-blue-600 dark:text-blue-400 text-sm"></i> Executive Dashboard
+                        </a>
+                        <a href="#" onclick="switchTab('matrix')" id="nav-matrix" class="nav-item flex items-center px-3 py-2.5 text-xs font-medium rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition">
+                            <i class="fa-solid fa-border-all w-6 text-slate-500 dark:text-slate-400 text-sm"></i> Interactive 2x2 Matrix
+                        </a>
+                        <a href="#" onclick="switchTab('stakeholders')" id="nav-stakeholders" class="nav-item flex items-center px-3 py-2.5 text-xs font-medium rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition">
+                            <i class="fa-solid fa-users w-6 text-slate-500 dark:text-slate-400 text-sm"></i> Stakeholders Directory
+                        </a>
+                        <a href="#" onclick="switchTab('grievances')" id="nav-grievances" class="nav-item flex items-center px-3 py-2.5 text-xs font-medium rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition">
+                            <i class="fa-solid fa-triangle-exclamation w-6 text-slate-500 dark:text-slate-400 text-sm"></i> Grievance Pipeline
+                        </a>
+                        <a href="#" onclick="switchTab('engagements')" id="nav-engagements" class="nav-item flex items-center px-3 py-2.5 text-xs font-medium rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition">
+                            <i class="fa-solid fa-comments w-6 text-slate-500 dark:text-slate-400 text-sm"></i> Engagement Logs
+                        </a>
+                        <a href="#" onclick="switchTab('reports')" id="nav-reports" class="nav-item flex items-center px-3 py-2.5 text-xs font-medium rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition">
+                            <i class="fa-solid fa-file-lines w-6 text-slate-500 dark:text-slate-400 text-sm"></i> Reports & Audits
+                        </a>
+                        <a href="#" onclick="switchTab('team')" id="nav-team" class="nav-item flex items-center px-3 py-2.5 text-xs font-medium rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition justify-between">
+                            <div class="flex items-center">
+                                <i class="fa-solid fa-user-gear w-6 text-slate-500 dark:text-slate-400 text-sm"></i> Team & Accounts
+                            </div>
+                            <span id="navPendingBadge" class="hidden text-[10px] bg-rose-500 text-white font-extrabold px-1.5 py-0.5 rounded-full">0</span>
+                        </a>
+                    </nav>
+                </div>
+
+                <div id="sidebarProjectsContainer">
+                    <div class="flex items-center justify-between mb-2 px-3">
+                        <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Projects Summary</p>
+                        <span id="addProjectNavBtn" class="text-xs text-blue-600 dark:text-blue-400 font-semibold cursor-pointer hover:underline" onclick="openModal('addProjectModal')">+ New</span>
+                    </div>
+                    <div class="space-y-2" id="projectQuickCards"></div>
+                </div>
+
+                <div class="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-xs text-slate-700 dark:text-slate-300 space-y-1.5 shadow-inner">
+                    <div class="flex justify-between font-medium">
+                        <span class="text-slate-500 dark:text-slate-400">Compliance Status:</span>
+                        <span class="text-emerald-600 dark:text-emerald-400 font-bold">96% Compliant</span>
+                    </div>
+                    <div class="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                        <div class="bg-emerald-500 h-full w-[96%] shadow-sm"></div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 min-w-0 space-y-6" id="pdfReportContainer">
+
+            <!-- TAB 1: EXECUTIVE DASHBOARD -->
+            <section id="tab-dashboard" class="tab-content space-y-6">
+                <div class="bg-slate-900 rounded-2xl p-6 text-white shadow-xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
+                    <div>
+                        <h2 class="text-xl font-bold text-white">Executive Governance Dashboard</h2>
+                        <p class="text-slate-400 text-xs mt-1">Multi-Project ESG Oversight, Stakeholder Mapping & Grievance Resolution Monitor.</p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="openBrandingModal()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-3.5 py-2 rounded-xl border border-slate-700 flex items-center transition shadow-sm">
+                            <i class="fa-solid fa-paintbrush mr-1.5 text-blue-400"></i> Customize Logo & Title
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DIRECTOR PENDING NOTIFICATION BANNER -->
+                <div id="directorPendingBanner" class="hidden glass-card p-4 rounded-2xl border-2 border-amber-400/80 bg-amber-500/10 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2.5 bg-amber-500 text-white rounded-xl shadow-md"><i class="fa-solid fa-bell text-lg"></i></div>
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-900 dark:text-white" id="directorBannerText">Pending Staff Password Reset Requests</h4>
+                            <p class="text-[11px] text-slate-600 dark:text-slate-300">Staff members have requested password assistance. Review and reset their passwords in Team Management.</p>
+                        </div>
+                    </div>
+                    <button onclick="switchTab('team')" class="px-3.5 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl shadow transition">Manage Requests &rarr;</button>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="glass-card p-4.5 rounded-2xl">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Total Stakeholders</p>
+                                <h3 class="text-2xl font-extrabold text-slate-900 dark:text-white mt-1" id="kpi-stakeholders">0</h3>
+                            </div>
+                            <div class="p-2.5 bg-blue-50 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-xl border border-blue-200 dark:border-blue-500/30"><i class="fa-solid fa-users text-lg"></i></div>
+                        </div>
+                        <p class="text-xs text-emerald-600 dark:text-emerald-400 mt-2 font-medium flex items-center"><i class="fa-solid fa-arrow-up text-[10px] mr-1"></i> Key influencers tracked</p>
+                    </div>
+
+                    <div class="glass-card p-4.5 rounded-2xl">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Open Grievances</p>
+                                <h3 class="text-2xl font-extrabold text-slate-900 dark:text-white mt-1" id="kpi-open-grievances">0</h3>
+                            </div>
+                            <div class="p-2.5 bg-amber-50 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl border border-amber-200 dark:border-amber-500/30"><i class="fa-solid fa-triangle-exclamation text-lg"></i></div>
+                        </div>
+                        <p class="text-xs text-amber-600 dark:text-amber-400 mt-2 font-medium" id="kpi-urgent-count">0 Urgent requiring action</p>
+                    </div>
+
+                    <div class="glass-card p-4.5 rounded-2xl">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Resolution Rate</p>
+                                <h3 class="text-2xl font-extrabold text-slate-900 dark:text-white mt-1" id="kpi-resolution-rate">0%</h3>
+                            </div>
+                            <div class="p-2.5 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-200 dark:border-emerald-500/30"><i class="fa-solid fa-circle-check text-lg"></i></div>
+                        </div>
+                        <p class="text-xs text-emerald-600 dark:text-emerald-400 mt-2 font-medium"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Avg 4.2 days closure</p>
+                    </div>
+
+                    <div class="glass-card p-4.5 rounded-2xl">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Manage Closely</p>
+                                <h3 class="text-2xl font-extrabold text-slate-900 dark:text-white mt-1" id="kpi-high-power">0</h3>
+                            </div>
+                            <div class="p-2.5 bg-rose-50 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl border border-rose-200 dark:border-rose-500/30"><i class="fa-solid fa-crown text-lg"></i></div>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium">Critical stakeholders</p>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="glass-card p-5 rounded-2xl">
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center">
+                            <i class="fa-solid fa-chart-column text-blue-600 dark:text-blue-400 mr-2"></i> Grievances Status by Category
+                        </h3>
+                        <div class="h-64"><canvas id="grievanceCategoryChart"></canvas></div>
+                    </div>
+
+                    <div class="glass-card p-5 rounded-2xl">
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center">
+                            <i class="fa-solid fa-chart-pie text-blue-600 dark:text-blue-400 mr-2"></i> Stakeholder Power-Interest Distribution
+                        </h3>
+                        <div class="h-64"><canvas id="stakeholderQuadrantChart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity Feed -->
+                <div class="glass-card p-5 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100"><i class="fa-solid fa-list-check text-slate-500 dark:text-slate-400 mr-2"></i> Recent Critical Grievances & Actions</h3>
+                        <button onclick="switchTab('grievances')" class="text-xs text-blue-600 dark:text-blue-400 font-semibold hover:underline">View All &rarr;</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-semibold uppercase">
+                                <tr>
+                                    <th class="p-3">Case ID</th><th class="p-3">Project</th><th class="p-3">Category</th><th class="p-3">Complainant</th><th class="p-3">Severity</th><th class="p-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboardRecentTable" class="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-300"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: INTERACTIVE 2x2 MATRIX -->
+            <section id="tab-matrix" class="tab-content space-y-6 hidden">
+                <div class="glass-card p-6 rounded-2xl space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900 dark:text-white flex items-center">
+                                <i class="fa-solid fa-border-all text-blue-600 dark:text-blue-400 mr-2"></i> Interactive Stakeholder Power vs Interest Matrix
+                            </h2>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Drag-and-drop stakeholder cards across quadrants or adjust ratings from the directory.</p>
+                        </div>
+                    </div>
+
+                    <div class="relative pt-6 pl-10 pb-6 pr-2 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-inner">
+                        <div class="absolute -left-16 top-1/2 -rotate-90 origin-center text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center space-x-2">
+                            <span>Power / Influence</span><i class="fa-solid fa-arrow-right"></i>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Quadrant I: KEEP SATISFIED -->
+                            <div class="quadrant-box bg-orange-50/80 dark:bg-orange-950/20 border-2 border-orange-300 dark:border-orange-500/40 rounded-2xl p-4 min-h-[220px]" 
+                                 ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropStakeholder(event, 'keep_satisfied')">
+                                <div class="flex justify-between items-center mb-3 pb-2 border-b border-orange-200 dark:border-orange-500/20">
+                                    <div>
+                                        <div class="text-[10px] font-extrabold uppercase tracking-wider text-orange-700 dark:text-orange-400">Quadrant I</div>
+                                        <h4 class="font-bold text-sm text-orange-950 dark:text-orange-200">KEEP SATISFIED</h4>
+                                        <p class="text-[11px] text-orange-800 dark:text-orange-300/80">Power: <span class="font-semibold">High (3-5)</span> | Interest: <span class="font-semibold">Low (1-2)</span></p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-[10px] text-orange-800 dark:text-orange-300/80 font-medium block">Assigned:</span>
+                                        <span class="px-2 py-0.5 rounded text-xs font-bold bg-orange-200 dark:bg-orange-900/60 text-orange-900 dark:text-orange-200 border border-orange-300 dark:border-orange-700/50" id="count-keep_satisfied">0</span>
+                                    </div>
+                                </div>
+                                <div class="space-y-2 max-h-64 overflow-y-auto p-1" id="quadrant-keep_satisfied"></div>
+                            </div>
+
+                            <!-- Quadrant II: MANAGE CLOSELY -->
+                            <div class="quadrant-box bg-rose-50/80 dark:bg-rose-950/20 border-2 border-rose-300 dark:border-rose-500/40 rounded-2xl p-4 min-h-[220px]"
+                                 ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropStakeholder(event, 'manage_closely')">
+                                <div class="flex justify-between items-center mb-3 pb-2 border-b border-rose-200 dark:border-rose-500/20">
+                                    <div>
+                                        <div class="text-[10px] font-extrabold uppercase tracking-wider text-rose-700 dark:text-rose-400">Quadrant II</div>
+                                        <h4 class="font-bold text-sm text-rose-950 dark:text-rose-200">MANAGE CLOSELY</h4>
+                                        <p class="text-[11px] text-rose-800 dark:text-rose-300/80">Power: <span class="font-semibold">High (3-5)</span> | Interest: <span class="font-semibold">High (3-5)</span></p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-[10px] text-rose-800 dark:text-rose-300/80 font-medium block">Assigned:</span>
+                                        <span class="px-2 py-0.5 rounded text-xs font-bold bg-rose-200 dark:bg-rose-900/60 text-rose-900 dark:text-rose-200 border border-rose-300 dark:border-rose-700/50" id="count-manage_closely">0</span>
+                                    </div>
+                                </div>
+                                <div class="space-y-2 max-h-64 overflow-y-auto p-1" id="quadrant-manage_closely"></div>
+                            </div>
+
+                            <!-- Quadrant III: MONITOR -->
+                            <div class="quadrant-box bg-emerald-50/80 dark:bg-emerald-950/20 border-2 border-emerald-300 dark:border-emerald-500/40 rounded-2xl p-4 min-h-[220px]"
+                                 ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropStakeholder(event, 'monitor')">
+                                <div class="flex justify-between items-center mb-3 pb-2 border-b border-emerald-200 dark:border-emerald-500/20">
+                                    <div>
+                                        <div class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Quadrant III</div>
+                                        <h4 class="font-bold text-sm text-emerald-950 dark:text-emerald-200">MONITOR (MINIMAL EFFORT)</h4>
+                                        <p class="text-[11px] text-emerald-800 dark:text-emerald-300/80">Power: <span class="font-semibold">Low (1-2)</span> | Interest: <span class="font-semibold">Low (1-2)</span></p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-[10px] text-emerald-800 dark:text-emerald-300/80 font-medium block">Assigned:</span>
+                                        <span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-200 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700/50" id="count-monitor">0</span>
+                                    </div>
+                                </div>
+                                <div class="space-y-2 max-h-64 overflow-y-auto p-1" id="quadrant-monitor"></div>
+                            </div>
+
+                            <!-- Quadrant IV: KEEP INFORMED -->
+                            <div class="quadrant-box bg-yellow-50/80 dark:bg-yellow-950/20 border-2 border-yellow-300 dark:border-yellow-500/40 rounded-2xl p-4 min-h-[220px]"
+                                 ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropStakeholder(event, 'keep_informed')">
+                                <div class="flex justify-between items-center mb-3 pb-2 border-b border-yellow-200 dark:border-yellow-500/20">
+                                    <div>
+                                        <div class="text-[10px] font-extrabold uppercase tracking-wider text-yellow-700 dark:text-yellow-400">Quadrant IV</div>
+                                        <h4 class="font-bold text-sm text-yellow-950 dark:text-yellow-200">KEEP INFORMED</h4>
+                                        <p class="text-[11px] text-yellow-800 dark:text-yellow-300/80">Power: <span class="font-semibold">Low (1-2)</span> | Interest: <span class="font-semibold">High (3-5)</span></p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-[10px] text-yellow-800 dark:text-yellow-300/80 font-medium block">Assigned:</span>
+                                        <span class="px-2 py-0.5 rounded text-xs font-bold bg-yellow-200 dark:bg-yellow-900/60 text-yellow-900 dark:text-yellow-200 border border-yellow-300 dark:border-yellow-700/50" id="count-keep_informed">0</span>
+                                    </div>
+                                </div>
+                                <div class="space-y-2 max-h-64 overflow-y-auto p-1" id="quadrant-keep_informed"></div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 text-center text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center justify-center space-x-2">
+                            <span>Interest / Stake Level</span><i class="fa-solid fa-arrow-right"></i>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: STAKEHOLDER DIRECTORY -->
+            <section id="tab-stakeholders" class="tab-content space-y-6 hidden">
+                <div class="glass-card p-5 rounded-2xl space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900 dark:text-white">Stakeholder Directory</h2>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Comprehensive database categorized by international standard E&S groups.</p>
+                        </div>
+                        <div id="stakeholderActionHeader">
+                            <button onclick="openModal('addStakeholderModal')" class="btn-3d bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition">
+                                <i class="fa-solid fa-plus mr-1"></i> Add New Stakeholder
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-3 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <div class="flex-1 min-w-[200px]">
+                            <input type="text" id="stakeholderSearch" oninput="renderStakeholders()" placeholder="Search by name, organization..." class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+                        <div>
+                            <select id="stakeholderProjectFilter" onchange="renderStakeholders()" class="text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none cursor-pointer">
+                                <option value="ALL">All Projects (Directory Filter)</option>
+                            </select>
+                        </div>
+                        <select id="stakeholderCategoryFilter" onchange="renderStakeholders()" class="text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none cursor-pointer">
+                            <option value="ALL">All Categories</option>
+                            <option value="Government Regulator">Government Regulator</option>
+                            <option value="Local Community Leader">Local Community Leader</option>
+                            <option value="Vulnerable Groups / PAPs">Vulnerable Groups / PAPs</option>
+                            <option value="NGO / Environmental Group">NGO / Environmental Group</option>
+                            <option value="Landowner / Real Estate">Landowner / Real Estate</option>
+                            <option value="Contractor / Developer">Contractor / Developer</option>
+                            <option value="Academic / Research">Academic / Research</option>
+                            <option value="Traditional Elders">Traditional Elders</option>
+                            <option value="Media / Press">Media / Press</option>
+                        </select>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-semibold uppercase">
+                                <tr>
+                                    <th class="p-3">Stakeholder Name</th>
+                                    <th class="p-3">Category</th>
+                                    <th class="p-3">Project</th>
+                                    <th class="p-3">Influence & Rating</th>
+                                    <th class="p-3">Matrix Quadrant</th>
+                                    <th class="p-3">Contact</th>
+                                    <th class="p-3 text-right" id="thStakeholderActions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stakeholdersTableBody" class="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-300"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: GRIEVANCE REDRESS PIPELINE -->
+            <section id="tab-grievances" class="tab-content space-y-6 hidden">
+                <div class="glass-card p-5 rounded-2xl space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900 dark:text-white">Grievance Redress Pipeline</h2>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Track, investigate, and resolve project-related grievances transparently.</p>
+                        </div>
+                        <div id="grievanceActionHeader">
+                            <button onclick="openModal('addGrievanceModal')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition shadow-md shadow-emerald-600/20">
+                                <i class="fa-solid fa-plus mr-1"></i> Register New Grievance
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button onclick="filterGrievanceStatus('ALL')" class="grievance-status-btn active px-3 py-1.5 text-xs font-semibold rounded-xl bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50">All Cases</button>
+                            <button onclick="filterGrievanceStatus('Open')" class="grievance-status-btn px-3 py-1.5 text-xs font-semibold rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition">Open</button>
+                            <button onclick="filterGrievanceStatus('Investigation')" class="grievance-status-btn px-3 py-1.5 text-xs font-semibold rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition">Investigation</button>
+                            <button onclick="filterGrievanceStatus('Review')" class="grievance-status-btn px-3 py-1.5 text-xs font-semibold rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition">Review</button>
+                            <button onclick="filterGrievanceStatus('Resolved')" class="grievance-status-btn px-3 py-1.5 text-xs font-semibold rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition">Closed</button>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <!-- YEAR CATEGORIZATION FILTER -->
+                            <div class="flex items-center space-x-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 px-3 py-1.5 rounded-xl">
+                                <i class="fa-solid fa-calendar-days text-blue-500 text-xs"></i>
+                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Year:</span>
+                                <select id="grievanceYearFilter" onchange="renderGrievances()" class="text-xs font-bold bg-transparent text-slate-900 dark:text-slate-100 focus:outline-none cursor-pointer">
+                                    <option value="ALL">All Years</option>
+                                    <option value="2026" selected>2026</option>
+                                    <option value="2025">2025</option>
+                                    <option value="2024">2024</option>
+                                </select>
+                            </div>
+                            <select id="grievanceProjectFilter" onchange="renderGrievances()" class="text-xs px-3.5 py-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none cursor-pointer">
+                                <option value="ALL">All Projects (Grievance Filter)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-semibold uppercase">
+                                <tr>
+                                    <th class="p-3">Case ID</th>
+                                    <th class="p-3">Project & Date</th>
+                                    <th class="p-3">Complainant</th>
+                                    <th class="p-3">Category & Summary</th>
+                                    <th class="p-3">Severity</th>
+                                    <th class="p-3">Status & Description</th>
+                                    <th class="p-3 text-right" id="thGrievanceActions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="grievanceTableBody" class="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-300"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 5: ENGAGEMENT LOGS -->
+            <section id="tab-engagements" class="tab-content space-y-6 hidden">
+                <div class="glass-card p-5 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900 dark:text-white">Stakeholder Engagement Logs</h2>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Record town halls, bilateral meetings, site visits, labeled minutes, and signed attendance lists.</p>
+                        </div>
+                        <div id="engagementActionHeader">
+                            <button onclick="openModal('addEngagementModal')" class="btn-3d bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition">
+                                <i class="fa-solid fa-plus mr-1"></i> Log Meeting
+                            </button>
+                        </div>
+                    </div>
+                    <div class="space-y-3" id="engagementLogList"></div>
+                </div>
+            </section>
+
+            <!-- TAB 6: REPORTS & EXPORTS (END OF YEAR ARCHIVE & DOWNLOAD) -->
+            <section id="tab-reports" class="tab-content space-y-6 hidden">
+                <div class="glass-card p-5 rounded-2xl space-y-4">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white">Professional Reports & Annual Local Archive Downloads</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Download annual grievance data categorized per year to save permanently on your local computer.</p>
+
+                    <!-- END-OF-YEAR BULK ARCHIVE SECTION -->
+                    <div class="p-5 bg-slate-900 rounded-2xl border border-slate-800 space-y-3 shadow-lg text-white">
+                        <div class="flex items-center space-x-2 font-bold text-sm">
+                            <i class="fa-solid fa-box-archive text-blue-400 text-lg"></i>
+                            <h3>End-of-Year Grievance Archive & Local Computer Saver</h3>
+                        </div>
+                        <p class="text-xs text-slate-300">Select a specific operational year below to compile and download all recorded grievances for local archiving.</p>
+                        
+                        <div class="flex flex-wrap items-center gap-3 pt-1">
+                            <div class="flex items-center space-x-2 bg-slate-800 px-3 py-2 rounded-xl border border-slate-700">
+                                <label class="text-xs font-bold text-slate-200">Select Target Year:</label>
+                                <select id="archiveYearSelect" class="text-xs font-bold bg-transparent text-white focus:outline-none cursor-pointer">
+                                    <option value="2026" class="bg-slate-900 text-white">Year 2026</option>
+                                    <option value="2025" class="bg-slate-900 text-white">Year 2025</option>
+                                    <option value="2024" class="bg-slate-900 text-white">Year 2024</option>
+                                    <option value="ALL" class="bg-slate-900 text-white">All Historical Years</option>
+                                </select>
+                            </div>
+
+                            <button onclick="exportAnnualGrievancesExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-md shadow-emerald-600/20 flex items-center space-x-1.5">
+                                <i class="fa-solid fa-file-excel text-sm"></i>
+                                <span>Download Year Excel (.xlsx)</span>
+                            </button>
+
+                            <button onclick="exportAnnualGrievancesWord()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-md shadow-blue-600/20 flex items-center space-x-1.5">
+                                <i class="fa-solid fa-file-word text-sm"></i>
+                                <span>Download Year Word (.doc)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                        <!-- Excel Export Card -->
+                        <div class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition flex flex-col justify-between">
+                            <div>
+                                <i class="fa-solid fa-file-excel text-2xl text-emerald-600 dark:text-emerald-400 mb-2"></i>
+                                <h3 class="font-bold text-sm text-slate-900 dark:text-white">Excel Full Workbook (.xlsx)</h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-3">Multi-sheet workbook containing Stakeholders, Grievances, and Engagements.</p>
+                            </div>
+                            <button onclick="exportExcelWorkbook()" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2.5 rounded-xl font-medium transition w-full flex items-center justify-center space-x-1.5 shadow-md shadow-emerald-600/20">
+                                <i class="fa-solid fa-download"></i><span>Download Excel (.xlsx)</span>
+                            </button>
+                        </div>
+
+                        <!-- Word Export Card -->
+                        <div class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition flex flex-col justify-between">
+                            <div>
+                                <i class="fa-solid fa-file-word text-2xl text-blue-600 dark:text-blue-400 mb-2"></i>
+                                <h3 class="font-bold text-sm text-slate-900 dark:text-white">Word Summary Report (.doc)</h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-3">Structured compliance report document for editing and printing.</p>
+                            </div>
+                            <button onclick="exportWordDocument()" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-2.5 rounded-xl font-medium transition w-full flex items-center justify-center space-x-1.5 shadow-md shadow-blue-600/20">
+                                <i class="fa-solid fa-download"></i><span>Download Word (.doc)</span>
+                            </button>
+                        </div>
+
+                        <!-- PDF Export Card -->
+                        <div class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition flex flex-col justify-between">
+                            <div>
+                                <i class="fa-solid fa-file-pdf text-2xl text-rose-600 dark:text-rose-400 mb-2"></i>
+                                <h3 class="font-bold text-sm text-slate-900 dark:text-white">Executive PDF Report (.pdf)</h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-3">Complete formatted dashboard & analytics report layout.</p>
+                            </div>
+                            <button onclick="exportDashboardPDF()" class="text-xs bg-rose-600 hover:bg-rose-500 text-white px-3.5 py-2.5 rounded-xl font-medium transition w-full flex items-center justify-center space-x-1.5 shadow-md shadow-rose-600/20">
+                                <i class="fa-solid fa-download"></i><span>Download PDF (.pdf)</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 7: TEAM & ACCOUNTS (DIRECTOR CONTROL) -->
+            <section id="tab-team" class="tab-content space-y-6 hidden">
+                <!-- PENDING NOTIFICATION REQUESTS TABLE FOR DIRECTOR -->
+                <div id="pendingRequestsSection" class="glass-card p-5 rounded-2xl space-y-3 border-2 border-amber-500/50 hidden">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-bold text-amber-600 dark:text-amber-400 flex items-center">
+                            <i class="fa-solid fa-bell text-lg mr-2 animate-bounce"></i> Pending Staff Password Reset Requests
+                        </h3>
+                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500 text-white" id="pendingRequestCountBadge">0 Pending</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-amber-100 dark:bg-amber-950/80 border-b border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-300 font-semibold uppercase">
+                                <tr>
+                                    <th class="p-3">Timestamp</th>
+                                    <th class="p-3">Staff Requesting</th>
+                                    <th class="p-3">Optional Note</th>
+                                    <th class="p-3 text-right">Director Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pendingRequestsTableBody" class="divide-y divide-amber-200 dark:divide-amber-800/60 text-slate-800 dark:text-slate-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="glass-card p-5 rounded-2xl space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900 dark:text-white">Director User Accounts & Permissions Console</h2>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Director/Management has complete authority to Add, Edit, Delete users, and Reset Passwords.</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <!-- BRANDING CUSTOMIZE BUTTON -->
+                            <button onclick="openBrandingModal()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-3.5 py-2.5 rounded-xl transition border border-slate-700">
+                                <i class="fa-solid fa-paintbrush mr-1"></i> Customize Branding
+                            </button>
+                            <!-- RESET TO CLEAN STATE BUTTON -->
+                            <button id="resetStateBtn" onclick="resetSystemToCleanState()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold px-3.5 py-2.5 rounded-xl transition shadow-md shadow-rose-600/20" title="Wipe demo sample data & start fresh with an empty clean database">
+                                <i class="fa-solid fa-rotate-right mr-1"></i> Reset to Clean State
+                            </button>
+                            <!-- ADD NEW USER BUTTON -->
+                            <button id="addNewUserBtn" onclick="openCreateUserModal()" class="btn-3d bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition cursor-pointer">
+                                <i class="fa-solid fa-user-plus mr-1"></i> Add New System User
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-semibold uppercase">
+                                <tr>
+                                    <th class="p-3">Full Name</th>
+                                    <th class="p-3">Username / ID</th>
+                                    <th class="p-3">Role Level</th>
+                                    <th class="p-3">Assigned Projects</th>
+                                    <th class="p-3 text-right">Director Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="teamTableBody" class="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-300"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- Password Reset Log Audit Table -->
+                    <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+                        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-2 flex items-center">
+                            <i class="fa-solid fa-key text-blue-600 dark:text-blue-400 mr-2"></i> Password Reset Audit Log
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-semibold uppercase">
+                                    <tr>
+                                        <th class="p-2.5">Timestamp</th>
+                                        <th class="p-2.5">User Account</th>
+                                        <th class="p-2.5">Action Executed</th>
+                                        <th class="p-2.5">Issued Temporary Password</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="passwordResetAuditTable" class="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-300"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- MODAL: ADD / EDIT STAKEHOLDER -->
+    <div id="addStakeholderModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+        <div class="glass-card rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div class="bg-slate-900 text-white p-4.5 flex justify-between items-center border-b border-slate-800">
+                <h3 class="font-bold text-sm flex items-center text-white"><i class="fa-solid fa-user-plus mr-2 text-blue-400"></i> Register Stakeholder</h3>
+                <button onclick="closeModal('addStakeholderModal')" class="text-slate-400 hover:text-white text-lg">&times;</button>
+            </div>
+            <form id="stakeholderForm" onsubmit="saveStakeholder(event)" class="p-5 space-y-4">
+                <input type="hidden" id="stakeholderEditId">
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Full Name / Key Contact *</label>
+                    <input type="text" id="shName" required placeholder="Enter stakeholder name" class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Organization / Group</label>
+                        <input type="text" id="shOrg" placeholder="Enter organization name" class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Category *</label>
+                        <select id="shCategory" required onchange="checkCustomCategory(this.value)" class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer">
+                            <option value="Government Regulator">Government Regulator</option>
+                            <option value="Local Community Leader">Local Community Leader</option>
+                            <option value="Vulnerable Groups / PAPs">Vulnerable Groups / PAPs</option>
+                            <option value="NGO / Environmental Group">NGO / Environmental Group</option>
+                            <option value="Landowner / Real Estate">Landowner / Real Estate</option>
+                            <option value="Contractor / Developer">Contractor / Developer</option>
+                            <option value="Academic / Research">Academic / Research</option>
+                            <option value="Traditional Elders">Traditional Elders</option>
+                            <option value="Media / Press">Media / Press</option>
+                            <option value="Other (Custom)">Other (Custom Category)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="customCategoryDiv" class="hidden">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Specify Custom Category *</label>
+                    <input type="text" id="shCustomCategory" placeholder="Enter custom category name" class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Assigned Project *</label>
+                    <select id="shProject" required class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer"></select>
+                </div>
+
+                <div class="bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Power Rating (1 to 5):</label>
+                            <span id="shPowerVal" class="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/80 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-900">Score: 3 (High)</span>
+                        </div>
+                        <input type="range" id="shPower" min="1" max="5" value="3" oninput="updateScoreLabels()" class="w-full accent-blue-600">
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Interest Rating (1 to 5):</label>
+                            <span id="shInterestVal" class="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/80 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-900">Score: 4 (High)</span>
+                        </div>
+                        <input type="range" id="shInterest" min="1" max="5" value="4" oninput="updateScoreLabels()" class="w-full accent-blue-600">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Email Address</label>
+                        <input type="email" id="shEmail" placeholder="Enter email address" class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Phone Number</label>
+                        <input type="text" id="shPhone" placeholder="Enter phone number" class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+                    <button type="button" onclick="closeModal('addStakeholderModal')" class="px-3.5 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">Cancel</button>
+                    <button type="submit" class="btn-3d px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl transition">Save Stakeholder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD GRIEVANCE -->
+    <div id="addGrievanceModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+        <div class="glass-card rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div class="bg-slate-900 text-white p-4.5 flex justify-between items-center border-b border-slate-800">
+                <h3 class="font-bold text-sm flex items-center text-white"><i class="fa-solid fa-triangle-exclamation mr-2 text-amber-400"></i> Log Grievance Incident</h3>
+                <button onclick="closeModal('addGrievanceModal')" class="text-slate-400 hover:text-white text-lg">&times;</button>
+            </div>
+            <form id="grievanceForm" onsubmit="saveGrievance(event)" class="p-5 space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Project *</label>
+                        <select id="grProject" required class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Complainant Name *</label>
+                        <input type="text" id="grComplainant" required placeholder="Enter complainant name" class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Category *</label>
+                        <select id="grCategory" required class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer">
+                            <option value="Land Compensation">Land & Property Compensation</option>
+                            <option value="Environmental">Environmental / Noise / Dust</option>
+                            <option value="Labor & Safety">Labor & Safety Concerns</option>
+                            <option value="Community Access">Community Access Rights</option>
+                            <option value="Cultural Heritage">Cultural & Social Impact</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Severity Rating *</label>
+                        <select id="grSeverity" required class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer">
+                            <option value="Low">Low - Minor Disruption</option>
+                            <option value="Medium" selected>Medium - Requires Investigation</option>
+                            <option value="High">High - Legal/Operational Risk</option>
+                            <option value="Critical">Critical - Urgent Emergency</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Phone (SMS Alert)</label>
+                        <input type="text" id="grPhone" placeholder="Enter phone number" class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Email Address</label>
+                        <input type="email" id="grEmail" placeholder="Enter email address" class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Grievance Description *</label>
+                    <textarea id="grSummary" required rows="3" class="w-full text-xs p-3.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none" placeholder="Provide detailed explanation..."></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+                    <button type="button" onclick="closeModal('addGrievanceModal')" class="px-3.5 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-md transition">Submit Grievance</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: MANAGE GRIEVANCE STATUS -->
+    <div id="manageGrievanceModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+        <div class="glass-card rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div class="bg-slate-900 text-white p-4.5 flex justify-between items-center border-b border-slate-800">
+                <h3 class="font-bold text-sm flex items-center text-white"><i class="fa-solid fa-pen-to-square mr-2 text-blue-400"></i> Update Case Status & Description</h3>
+                <button onclick="closeModal('manageGrievanceModal')" class="text-slate-400 hover:text-white text-lg">&times;</button>
+            </div>
+            <form id="manageGrievanceForm" onsubmit="saveGrievanceManagement(event)" class="p-5 space-y-4">
+                <input type="hidden" id="manageGrId">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Status Workflow *</label>
+                    <select id="manageGrStatus" required class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none cursor-pointer">
+                        <option value="Open">Open (Received)</option>
+                        <option value="Investigation">Investigation (Under Active Inquiry)</option>
+                        <option value="Review">Review (Management Assessment)</option>
+                        <option value="Closed">Closed (Resolved & Completed)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Resolution Description *</label>
+                    <textarea id="manageGrNotes" required rows="4" placeholder="Provide clear description of actions taken..." class="w-full text-xs p-3.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none"></textarea>
+                </div>
+                <div class="bg-blue-50 dark:bg-blue-950/60 p-3.5 rounded-xl border border-blue-200 dark:border-blue-900/50 text-[11px] text-blue-900 dark:text-blue-200">
+                    <i class="fa-solid fa-envelope-circle-check text-blue-600 dark:text-blue-400 mr-1"></i> Saving automatically triggers SMS & Email status update dispatch.
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+                    <button type="button" onclick="closeModal('manageGrievanceModal')" class="px-3.5 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">Cancel</button>
+                    <button type="submit" class="btn-3d px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-md transition">Save & Send Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD ENGAGEMENT LOG -->
+    <div id="addEngagementModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+        <div class="glass-card rounded-2xl w-full max-w-lg overflow-hidden max-h-[90vh] overflow-y-auto shadow-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div class="bg-slate-900 text-white p-4.5 flex justify-between items-center sticky top-0 z-10 border-b border-slate-800">
+                <h3 class="font-bold text-sm flex items-center text-white"><i class="fa-solid fa-comments mr-2 text-blue-400"></i> Field Log Meeting & Document Uploads</h3>
+                <button onclick="closeModal('addEngagementModal')" class="text-slate-400 hover:text-white text-lg">&times;</button>
+            </div>
+            <form id="engagementForm" onsubmit="saveEngagement(event)" class="p-5 space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Project *</label>
+                        <select id="engProject" required class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Meeting Date *</label>
+                        <input type="date" id="engDate" required class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Consultation Title *</label>
+                    <input type="text" id="engTitle" placeholder="Enter consultation title" required class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Stakeholder / Group</label>
+                        <input type="text" id="engStakeholders" placeholder="Enter stakeholder group" class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Attendees Count</label>
+                        <input type="number" id="engAttendees" value="10" class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Key Outcomes & Commitments</label>
+                    <textarea id="engOutcomes" rows="2" class="w-full text-xs p-3.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none" placeholder="Summary of discussions..."></textarea>
+                </div>
+
+                <!-- SEPARATE UPLOAD 1 -->
+                <div class="p-3.5 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                        <i class="fa-solid fa-file-lines text-blue-600 dark:text-blue-400 mr-1"></i> Meeting Minutes Document
+                    </label>
+                    <input type="text" id="minutesLabel" placeholder="Enter minutes label or title" class="w-full text-xs px-3.5 py-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none">
+                    <input type="file" id="minutesFile" accept=".pdf,.doc,.docx,.txt" class="w-full text-xs text-slate-500 dark:text-slate-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-100 dark:file:bg-slate-800 file:text-slate-700 dark:file:text-slate-300 cursor-pointer">
+                </div>
+
+                <!-- SEPARATE UPLOAD 2 -->
+                <div class="p-3.5 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                        <i class="fa-solid fa-users-rectangle text-emerald-600 dark:text-emerald-400 mr-1"></i> Attendance Sign-in Sheet
+                    </label>
+                    <input type="text" id="attendanceLabel" placeholder="Enter attendance label or title" class="w-full text-xs px-3.5 py-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none">
+                    <input type="file" id="attendanceFile" accept=".pdf,.png,.jpg,.jpeg,.xls,.xlsx" class="w-full text-xs text-slate-500 dark:text-slate-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-100 dark:file:bg-slate-800 file:text-slate-700 dark:file:text-slate-300 cursor-pointer">
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+                    <button type="button" onclick="closeModal('addEngagementModal')" class="px-3.5 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">Cancel</button>
+                    <button type="submit" class="btn-3d px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-md transition">Save Meeting Log & Uploads</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD PROJECT -->
+    <div id="addProjectModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+        <div class="glass-card rounded-2xl w-full max-w-md overflow-hidden shadow-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div class="bg-slate-900 text-white p-4.5 flex justify-between items-center border-b border-slate-800">
+                <h3 class="font-bold text-sm flex items-center text-white"><i class="fa-solid fa-folder-plus mr-2 text-blue-400"></i> Add New Enterprise Project</h3>
+                <button onclick="closeModal('addProjectModal')" class="text-slate-400 hover:text-white text-lg">&times;</button>
+            </div>
+            <form id="projectForm" onsubmit="saveProject(event)" class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Project Name *</label>
+                    <input type="text" id="prjName" placeholder="Enter project name" required class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Region / Location</label>
+                    <input type="text" id="prjLocation" placeholder="Enter region or location" class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+                    <button type="button" onclick="closeModal('addProjectModal')" class="px-3.5 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">Cancel</button>
+                    <button type="submit" class="btn-3d px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-md transition">Create Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD / EDIT USER ACCOUNT (DIRECTOR ONLY) -->
+    <div id="addUserModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+        <div class="glass-card rounded-2xl w-full max-w-md overflow-hidden shadow-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div class="bg-slate-900 text-white p-4.5 flex justify-between items-center border-b border-slate-800">
+                <h3 id="userModalTitle" class="font-bold text-sm flex items-center text-white"><i class="fa-solid fa-user-plus mr-2 text-blue-400"></i> Create System User Account</h3>
+                <button onclick="closeModal('addUserModal')" class="text-slate-400 hover:text-white text-lg">&times;</button>
+            </div>
+            <form id="userForm" onsubmit="saveUserAccount(event)" class="p-5 space-y-4">
+                <input type="hidden" id="userEditId">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Full Name *</label>
+                    <input type="text" id="newUserName" placeholder="Enter full name" required class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Username ID *</label>
+                    <input type="text" id="newUserUsername" placeholder="Enter username ID" required class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Password *</label>
+                    <input type="text" id="newUserPassword" value="JohnGeo2026!" required class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none">
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Director manages overall system and issues credentials.</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">User Role Level *</label>
+                    <select id="newUserRole" onchange="toggleProjectSelectionVisibility(this.value)" class="w-full text-xs px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none cursor-pointer">
+                        <option value="sociologist">Field Sociologist (Can log meetings & issues for assigned projects)</option>
+                        <option value="viewer">View-Only Auditor / Stakeholder (Can inspect dashboards, logs, reports without editing)</option>
+                        <option value="management">Director / Management Executive (Full overall control over entire system & accounts)</option>
+                    </select>
+                </div>
+                <div id="projectAccessSection">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Assign Projects Access *</label>
+                    <div id="userProjectsCheckboxes" class="space-y-1.5 max-h-32 overflow-y-auto p-2.5 border border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+                    <button type="button" onclick="closeModal('addUserModal')" class="px-3.5 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">Cancel</button>
+                    <button type="submit" class="btn-3d px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-md transition">Save Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN JAVASCRIPT APP LOGIC -->
+    <script>
+        const STORAGE_KEY = 'nexus_grm_enterprise_state_v15';
+        const THEME_KEY = 'nexus_grm_theme';
+        const SESSION_KEY = 'nexus_grm_current_user';
+        const BRANDING_KEY = 'nexus_grm_branding';
+
+        let defaultBranding = {
+            title: 'NexusGRM Enterprise',
+            subtitle: 'Stakeholder Engagement & Grievance Redress System',
+            logoUrl: '',
+            logoType: 'icon'
+        };
+
+        let defaultState = {
+            activeProject: 'ALL',
+            theme: 'dark',
+            isCleanStateWiped: false,
+            notifications: [
+                { id: 'n1', caseId: 'GR-102', message: 'New High Severity Land Compensation grievance logged.', date: '2026-10-12', read: false },
+                { id: 'n2', caseId: 'GR-101', message: 'New Environmental grievance registered for Olkaria.', date: '2026-10-10', read: true }
+            ],
+            users: [
+                { id: 'u1', name: 'John Mwikwabe (Director)', username: 'director', role: 'management', pass: 'JohnGeo2026!', assignedProjects: ['ALL'] },
+                { id: 'u2', name: 'Field Sociologist Team', username: 'field_staff', role: 'sociologist', pass: 'StaffGeo2026!', assignedProjects: ['P1', 'P2'] },
+                { id: 'u3', name: 'Compliance Auditor', username: 'auditor', role: 'viewer', pass: 'Audit2026!', assignedProjects: ['ALL'] }
+            ],
+            passwordRequests: [
+                { id: 'req-1', timestamp: '2026-10-21 09:15', userIdentifier: 'field_staff', note: 'Forgot my password during field visit', status: 'Pending' }
+            ],
+            passwordResetLogs: [
+                { timestamp: '2026-10-15 10:30', username: 'field_staff', action: 'Director Reset Password', tempPass: 'StaffGeo2026!' }
+            ],
+            projects: [
+                { id: 'P1', name: 'Olkaria BESS Project', location: 'Naivasha, Kenya' },
+                { id: 'P2', name: 'Kajiado Road Corridor', location: 'Kajiado County' },
+                { id: 'P3', name: 'Nairobi Flood Mitigation', location: 'Nairobi Basin' }
+            ],
+            stakeholders: [
+                { id: 'S1', projectId: 'P1', name: 'Dr. Samuel Kiptoo', org: 'National Environment Authority', category: 'Government Regulator', power: 5, interest: 4, email: 'kiptoo@nema.go.ke', phone: '+254 711 002233' },
+                { id: 'S2', projectId: 'P1', name: 'Elder Mzee Ole Nkai', org: 'Olkaria Community Trust', category: 'Traditional Elders', power: 4, interest: 5, email: 'trust@olkaria.org', phone: '+254 722 445566' },
+                { id: 'S3', projectId: 'P2', name: 'Grace Wambui', org: 'Kajiado Landowners Alliance', category: 'Landowner / Real Estate', power: 2, interest: 5, email: 'gwambui@landrights.or.ke', phone: '+254 733 889900' }
+            ],
+            grievances: [
+                { id: 'GR-101', projectId: 'P1', complainant: 'Naivasha Farmers Association', phone: '+254711223344', email: 'farmers@naivasha.org', category: 'Environmental', summary: 'Dust pollution from access road affecting nearby crops.', severity: 'Medium', status: 'Investigation', resolutionNotes: 'Initial site inspection scheduled with contractor.', date: '2026-10-10', year: '2026' },
+                { id: 'GR-102', projectId: 'P2', complainant: 'Joseph Karuri', phone: '+254722334455', email: 'joseph@karuri.co.ke', category: 'Land Compensation', summary: 'Delay in valuation statement for acquired parcel #402.', severity: 'High', status: 'Open', resolutionNotes: 'Awaiting district land surveyor report.', date: '2026-10-12', year: '2026' },
+                { id: 'GR-099', projectId: 'P1', complainant: 'Naivasha Water Users Association', phone: '+254711998877', email: 'water@naivasha.org', category: 'Environmental', summary: 'Runoff siltation into stream bed during rainy period.', severity: 'Medium', status: 'Closed', resolutionNotes: 'Silt traps constructed successfully by site engineer.', date: '2025-11-15', year: '2025' }
+            ],
+            engagements: [
+                { 
+                    id: 'E1', 
+                    projectId: 'P1', 
+                    date: '2026-10-08', 
+                    title: 'BESS Environmental Impact Briefing', 
+                    stakeholders: 'Naivasha Community Leaders', 
+                    attendees: 28, 
+                    outcomes: 'Agreed on weekly water spraying for dust management.', 
+                    loggedBy: 'Field Sociologist Team',
+                    minutes: { label: 'Olkaria Community Townhall Minutes - Final', dataUrl: '#' },
+                    attendance: { label: 'Signed Attendance List - PAPs Group B', dataUrl: '#' }
+                }
+            ]
+        };
+
+        let state = loadState();
+        let branding = loadBranding();
+        let currentUser = loadSession();
+        let catChartInstance = null;
+        let quadChartInstance = null;
+        let draggedStakeholderId = null;
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (!parsed.users) parsed.users = defaultState.users;
+                    if (!parsed.notifications) parsed.notifications = [];
+                    return parsed;
+                }
+            } catch (e) { console.error('Error loading state', e); }
+            return defaultState;
+        }
+
+        function loadBranding() {
+            try {
+                const saved = localStorage.getItem(BRANDING_KEY);
+                if (saved) return JSON.parse(saved);
+            } catch (e) { console.error('Error loading branding', e); }
+            return defaultBranding;
+        }
+
+        function saveBranding(bObj) {
+            localStorage.setItem(BRANDING_KEY, JSON.stringify(bObj));
+            branding = bObj;
+            applyBranding();
+        }
+
+        function applyBranding() {
+            document.getElementById('htmlPageTitle').innerText = branding.title;
+            document.getElementById('headerTitleText').innerText = branding.title;
+            document.getElementById('headerUserRoleSub').innerText = branding.subtitle;
+            document.getElementById('authModalTitleText').innerText = branding.title;
+            document.getElementById('footerBrandingText').innerHTML = `&copy; ${branding.title} 2026. All rights reserved.`;
+
+            const logoCont = document.getElementById('headerLogoContainer');
+            const authLogoCont = document.getElementById('authModalLogoContainer');
+
+            if (branding.logoType === 'image' && branding.logoUrl) {
+                logoCont.innerHTML = `<img src="${branding.logoUrl}" alt="Logo" class="w-full h-full object-contain">`;
+                authLogoCont.innerHTML = `<img src="${branding.logoUrl}" alt="Logo" class="w-full h-full object-contain">`;
+            } else {
+                logoCont.innerHTML = `<i class="fa-solid fa-diagram-project text-3xl text-slate-900"></i>`;
+                authLogoCont.innerHTML = `<i class="fa-solid fa-shield-halved text-4xl text-slate-900"></i>`;
+            }
+        }
+
+        function openBrandingModal() {
+            document.getElementById('brandTitleInput').value = branding.title;
+            document.getElementById('brandSubtitleInput').value = branding.subtitle;
+            openModal('customizeBrandingModal');
+        }
+
+        function saveCustomBranding(e) {
+            e.preventDefault();
+            const title = document.getElementById('brandTitleInput').value.trim();
+            const subtitle = document.getElementById('brandSubtitleInput').value.trim();
+            const fileInput = document.getElementById('brandLogoFile').files[0];
+
+            if (fileInput) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    saveBranding({
+                        title: title || defaultBranding.title,
+                        subtitle: subtitle || defaultBranding.subtitle,
+                        logoUrl: evt.target.result,
+                        logoType: 'image'
+                    });
+                    closeModal('customizeBrandingModal');
+                    alert('System branding and logo successfully updated!');
+                };
+                reader.readAsDataURL(fileInput);
+            } else {
+                saveBranding({
+                    title: title || defaultBranding.title,
+                    subtitle: subtitle || defaultBranding.subtitle,
+                    logoUrl: branding.logoUrl,
+                    logoType: branding.logoUrl ? 'image' : 'icon'
+                });
+                closeModal('customizeBrandingModal');
+                alert('System branding successfully updated!');
+            }
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            } catch (e) { console.error('Error saving state', e); }
+        }
+
+        function loadSession() {
+            try {
+                const session = sessionStorage.getItem(SESSION_KEY);
+                if (session) return JSON.parse(session);
+            } catch (e) { console.error('Error loading session', e); }
+            return null;
+        }
+
+        function saveSession(userObj) {
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify(userObj));
+            currentUser = userObj;
+        }
+
+        function resetSystemToCleanState() {
+            if (state.isCleanStateWiped) return;
+            if (confirm('Are you sure you want to reset and wipe all sample data to start fresh with a clean empty database for real operations?')) {
+                state.isCleanStateWiped = true;
+                state.projects = [];
+                state.stakeholders = [];
+                state.grievances = [];
+                state.engagements = [];
+                state.notifications = [];
+                state.passwordRequests = [];
+                state.passwordResetLogs = [];
+                saveState();
+                alert('System successfully reset to a clean state! Sample data wiped.');
+                initializeWorkspace();
+            }
+        }
+
+        window.onload = function() {
+            initTheme();
+            applyBranding();
+            populatePublicProjectDropdown();
+            populateFilterDropdowns();
+            if (!currentUser) {
+                document.getElementById('authModal').classList.remove('hidden');
+            } else {
+                document.getElementById('authModal').classList.add('hidden');
+                initializeWorkspace();
+            }
+        };
+
+        function toggleNotificationDropdown() {
+            const dropdown = document.getElementById('notifDropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        function triggerNewGrievanceAlert(newCase) {
+            const notifObj = {
+                id: 'n-' + Date.now(),
+                caseId: newCase.id,
+                message: `New ${newCase.severity} severity ${newCase.category} grievance from ${newCase.complainant}.`,
+                date: newCase.date,
+                read: false
+            };
+            if (!state.notifications) state.notifications = [];
+            state.notifications.unshift(notifObj);
+            saveState();
+
+            renderNotifications();
+
+            const banner = document.getElementById('realtimeGrievanceAlertBanner');
+            const msgEl = document.getElementById('alertBannerMessage');
+            if (banner && msgEl) {
+                msgEl.innerText = `Case ID [${newCase.id}]: ${notifObj.message}`;
+                banner.classList.remove('hidden');
+            }
+        }
+
+        function dismissAlertBanner() {
+            const banner = document.getElementById('realtimeGrievanceAlertBanner');
+            if (banner) banner.classList.add('hidden');
+        }
+
+        function markAllNotificationsRead() {
+            if (state.notifications) {
+                state.notifications.forEach(n => n.read = true);
+                saveState();
+                renderNotifications();
+            }
+        }
+
+        function renderNotifications() {
+            const container = document.getElementById('notifListContainer');
+            const badge = document.getElementById('notifUnreadBadge');
+            if (!container || !badge) return;
+
+            const list = state.notifications || [];
+            const unreadCount = list.filter(n => !n.read).length;
+
+            if (unreadCount > 0) {
+                badge.innerText = unreadCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+
+            if (list.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-500 dark:text-slate-400 p-4 text-center">No grievance alerts recorded.</p>`;
+                return;
+            }
+
+            container.innerHTML = list.map(n => `
+                <div class="p-3 text-xs flex items-start space-x-2 ${n.read ? 'bg-transparent text-slate-600 dark:text-slate-400' : 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white'}">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-500 text-sm mt-0.5"></i>
+                    <div class="flex-1 truncate">
+                        <span class="text-blue-600 dark:text-blue-400">${n.caseId}:</span> ${n.message}
+                        <span class="text-[10px] text-slate-400 block font-normal mt-0.5">${n.date}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function switchAuthTab(mode) {
+            const staffSec = document.getElementById('staffLoginSection');
+            const publicSec = document.getElementById('publicPortalSection');
+            const staffBtn = document.getElementById('authTabStaff');
+            const pubBtn = document.getElementById('authTabPublic');
+
+            if (mode === 'staff') {
+                staffSec.classList.remove('hidden');
+                publicSec.classList.add('hidden');
+                staffBtn.className = "flex-1 py-3 text-xs font-bold text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 bg-white dark:bg-slate-900/60 transition";
+                pubBtn.className = "flex-1 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition";
+            } else {
+                staffSec.classList.add('hidden');
+                publicSec.classList.remove('hidden');
+                pubBtn.className = "flex-1 py-3 text-xs font-bold text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 bg-white dark:bg-slate-900/60 transition";
+                staffBtn.className = "flex-1 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition";
+                populatePublicProjectDropdown();
+            }
+        }
+
+        function switchPublicMode(subMode) {
+            const submitForm = document.getElementById('publicSubmitForm');
+            const trackSec = document.getElementById('publicTrackSection');
+            const submitBtn = document.getElementById('pubModeSubmitBtn');
+            const trackBtn = document.getElementById('pubModeTrackBtn');
+
+            if (subMode === 'submit') {
+                submitForm.classList.remove('hidden');
+                trackSec.classList.add('hidden');
+                submitBtn.className = "flex-1 pb-2 text-xs font-bold text-blue-600 dark:text-blue-400 border-b-2 border-blue-600";
+                trackBtn.className = "flex-1 pb-2 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
+            } else {
+                submitForm.classList.add('hidden');
+                trackSec.classList.remove('hidden');
+                trackBtn.className = "flex-1 pb-2 text-xs font-bold text-blue-600 dark:text-blue-400 border-b-2 border-blue-600";
+                submitBtn.className = "flex-1 pb-2 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
+            }
+        }
+
+        function handlePasswordRequestSubmit(e) {
+            e.preventDefault();
+            const identifier = document.getElementById('reqUserIdentifier').value.trim();
+            const note = document.getElementById('reqUserNote').value.trim();
+
+            const newReq = {
+                id: 'req-' + (state.passwordRequests.length + 1),
+                timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
+                userIdentifier: identifier,
+                note: note || 'Password Reset Request',
+                status: 'Pending'
+            };
+
+            state.passwordRequests.unshift(newReq);
+            saveState();
+
+            alert(`Password reset request sent successfully!\n\nDirector/Management has been notified. Contact the Director to receive your new temporary password.`);
+            closeModal('forgotPasswordModal');
+            document.getElementById('reqUserIdentifier').value = '';
+            document.getElementById('reqUserNote').value = '';
+        }
+
+        function populatePublicProjectDropdown() {
+            const sel = document.getElementById('pubProjectSelect');
+            if (!sel) return;
+            sel.innerHTML = state.projects.map(p => `<option value="${p.id}" class="bg-slate-900 text-white">${p.name} (${p.location})</option>`).join('');
+        }
+
+        function populateFilterDropdowns() {
+            const shFilter = document.getElementById('stakeholderProjectFilter');
+            const grFilter = document.getElementById('grievanceProjectFilter');
+            const prjOptions = `<option value="ALL" class="bg-slate-900 text-white">All Projects</option>` + state.projects.map(p => `<option value="${p.id}" class="bg-slate-900 text-white">${p.name}</option>`).join('');
+            if (shFilter) shFilter.innerHTML = prjOptions;
+            if (grFilter) grFilter.innerHTML = prjOptions;
+        }
+
+        function handlePublicGrievanceSubmit(e) {
+            e.preventDefault();
+            const currentDate = new Date().toISOString().split('T')[0];
+            const currentYear = currentDate.substring(0, 4);
+
+            const newId = 'GR-' + (100 + state.grievances.length + 1);
+            const complainant = document.getElementById('pubComplainant').value;
+            const phone = document.getElementById('pubPhone').value || 'N/A';
+            const email = document.getElementById('pubEmail').value || 'N/A';
+            const category = document.getElementById('pubCategory').value;
+            const summary = document.getElementById('pubSummary').value;
+            const projectId = document.getElementById('pubProjectSelect').value;
+
+            const newCase = {
+                id: newId,
+                projectId: projectId,
+                complainant: complainant,
+                phone: phone,
+                email: email,
+                category: category,
+                severity: 'Medium',
+                summary: summary,
+                status: 'Open',
+                resolutionNotes: 'Grievance received and queued for review by management.',
+                date: currentDate,
+                year: currentYear
+            };
+
+            state.grievances.unshift(newCase);
+            triggerNewGrievanceAlert(newCase);
+            saveState();
+
+            alert(`Grievance successfully submitted! Your Tracking ID is: ${newId}.\n\nSimulated SMS & Email notification sent to ${phone} and ${email} confirming status "Open".`);
+            document.getElementById('publicSubmitForm').reset();
+            switchPublicMode('track');
+            document.getElementById('trackCaseIdInput').value = newId;
+            trackCaseStatus();
+        }
+
+        function trackCaseStatus() {
+            const code = document.getElementById('trackCaseIdInput').value.trim().toUpperCase();
+            const resContainer = document.getElementById('trackResultContainer');
+            resContainer.classList.remove('hidden');
+
+            const found = state.grievances.find(g => g.id.toUpperCase() === code);
+            if (!found) {
+                resContainer.innerHTML = `<p class="text-rose-600 dark:text-rose-400 font-bold">Case ID "${code}" not found. Please verify your tracking code.</p>`;
+                return;
+            }
+
+            resContainer.innerHTML = `
+                <div class="space-y-1.5">
+                    <div class="flex justify-between font-bold text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-1">
+                        <span>Case ID: ${found.id}</span>
+                        <span>${getStatusBadge(found.status)}</span>
+                    </div>
+                    <p class="text-slate-700 dark:text-slate-300"><strong>Project:</strong> ${getProjectName(found.projectId)}</p>
+                    <p class="text-slate-700 dark:text-slate-300"><strong>Complainant:</strong> ${found.complainant}</p>
+                    <p class="text-slate-700 dark:text-slate-300"><strong>Category:</strong> ${found.category} | <strong>Date:</strong> ${found.date} (Year ${found.year || '2026'})</p>
+                    <p class="text-slate-700 dark:text-slate-300"><strong>Issue Summary:</strong> ${found.summary}</p>
+                    <div class="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-200 mt-2">
+                        <p class="font-bold mb-1"><i class="fa-solid fa-bell mr-1 text-blue-500"></i> SMS & Email Status Update & Description:</p>
+                        <p>${found.resolutionNotes || 'Under initial review.'}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const usernameInput = document.getElementById('loginUsername').value.trim().toLowerCase();
+            const passwordInput = document.getElementById('loginPassword').value.trim();
+
+            const user = state.users.find(x => x.username.toLowerCase() === usernameInput && x.pass === passwordInput);
+
+            if (user) {
+                saveSession(user);
+                document.getElementById('authModal').classList.add('hidden');
+                document.getElementById('loginUsername').value = '';
+                document.getElementById('loginPassword').value = '';
+                initializeWorkspace();
+            } else {
+                alert('Authentication failed: Invalid username or password. Please verify your credentials.');
+            }
+        }
+
+        function logoutSession() {
+            sessionStorage.removeItem(SESSION_KEY);
+            currentUser = null;
+            document.getElementById('authModal').classList.remove('hidden');
+        }
+
+        function initializeWorkspace() {
+            document.getElementById('currentLoggedUserBadge').innerText = `${currentUser.name} (${currentUser.role.toUpperCase()})`;
+            document.getElementById('headerUserRoleSub').innerText = currentUser.role === 'management' ? 'Director Console' : currentUser.role === 'viewer' ? 'View-Only Auditor Portal' : 'Field Sociologist Workspace';
+            
+            const teamNav = document.getElementById('nav-team');
+            const addPrjBtn = document.getElementById('addProjectNavBtn');
+            const topActions = document.getElementById('topActionButtons');
+
+            if (currentUser.role === 'viewer') {
+                if (teamNav) teamNav.style.display = 'none';
+                if (addPrjBtn) addPrjBtn.style.display = 'none';
+                if (topActions) topActions.style.display = 'none';
+            } else if (currentUser.role === 'sociologist') {
+                if (teamNav) teamNav.style.display = 'none';
+                if (addPrjBtn) addPrjBtn.style.display = 'none';
+                if (topActions) topActions.style.display = 'flex';
+            } else {
+                if (teamNav) teamNav.style.display = 'flex';
+                if (addPrjBtn) addPrjBtn.style.display = 'inline';
+                if (topActions) topActions.style.display = 'flex';
+                renderTeamMembers();
+                renderPasswordResetLogs();
+                checkPendingRequestsNotification();
+            }
+
+            const addUserBtn = document.getElementById('addNewUserBtn');
+            if (addUserBtn) addUserBtn.style.display = 'inline-flex';
+
+            const resetBtn = document.getElementById('resetStateBtn');
+            if (resetBtn) {
+                if (state.isCleanStateWiped) {
+                    resetBtn.disabled = true;
+                    resetBtn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-slate-400', 'dark:bg-slate-700', 'pointer-events-none');
+                    resetBtn.classList.remove('bg-rose-600', 'hover:bg-rose-500');
+                    resetBtn.title = 'System is already in a clean wiped state.';
+                } else {
+                    resetBtn.disabled = false;
+                    resetBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-400', 'dark:bg-slate-700', 'pointer-events-none');
+                    resetBtn.classList.add('bg-rose-600', 'hover:bg-rose-500');
+                }
+            }
+
+            renderNotifications();
+            renderProjectDropdowns();
+            populateFilterDropdowns();
+            renderDashboard();
+            renderMatrix();
+            renderStakeholders();
+            renderGrievances();
+            renderEngagements();
+            initCharts();
+            updateScoreLabels();
+        }
+
+        function checkPendingRequestsNotification() {
+            if (currentUser.role !== 'management') return;
+            const pendingList = (state.passwordRequests || []).filter(r => r.status === 'Pending');
+            const banner = document.getElementById('directorPendingBanner');
+            const navBadge = document.getElementById('navPendingBadge');
+
+            if (pendingList.length > 0) {
+                if (banner) {
+                    banner.classList.remove('hidden');
+                    document.getElementById('directorBannerText').innerText = `${pendingList.length} Pending Password Reset Request(s) Attention Required`;
+                }
+                if (navBadge) {
+                    navBadge.classList.remove('hidden');
+                    navBadge.innerText = pendingList.length;
+                }
+            } else {
+                if (banner) banner.classList.add('hidden');
+                if (navBadge) navBadge.classList.add('hidden');
+            }
+        }
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
+            state.theme = savedTheme;
+            applyTheme(savedTheme);
+        }
+
+        function toggleTheme() {
+            state.theme = state.theme === 'light' ? 'dark' : 'light';
+            localStorage.setItem(THEME_KEY, state.theme);
+            applyTheme(state.theme);
+            updateCharts();
+        }
+
+        function applyTheme(theme) {
+            const htmlRoot = document.getElementById('htmlRoot');
+            const themeIcon = document.getElementById('themeIcon');
+            if (theme === 'dark') {
+                htmlRoot.classList.add('dark');
+                if (themeIcon) { themeIcon.classList.remove('fa-sun'); themeIcon.classList.add('fa-moon'); }
+            } else {
+                htmlRoot.classList.remove('dark');
+                if (themeIcon) { themeIcon.classList.remove('fa-moon'); themeIcon.classList.add('fa-sun'); }
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('active', 'text-blue-600', 'dark:text-blue-400', 'bg-blue-50', 'dark:bg-blue-950/60', 'border', 'border-blue-200', 'dark:border-blue-800/40', 'shadow-inner');
+                el.classList.add('text-slate-700', 'dark:text-slate-300');
+            });
+
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            const activeNav = document.getElementById('nav-' + tabId);
+            if (activeNav) {
+                activeNav.classList.add('active', 'text-blue-600', 'dark:text-blue-400', 'bg-blue-50', 'dark:bg-blue-950/60', 'border', 'border-blue-200', 'dark:border-blue-800/40', 'shadow-inner');
+                activeNav.classList.remove('text-slate-700', 'dark:text-slate-300');
+            }
+
+            if (tabId === 'matrix') renderMatrix();
+            if (tabId === 'dashboard') updateCharts();
+            if (tabId === 'team') { renderTeamMembers(); renderPasswordResetLogs(); renderPendingRequests(); }
+        }
+
+        function handleProjectChange(val) {
+            state.activeProject = val;
+            saveState();
+            renderDashboard();
+            renderMatrix();
+            renderStakeholders();
+            renderGrievances();
+            renderEngagements();
+        }
+
+        function getQuadrantKey(power, interest) {
+            const highPower = power >= 3;
+            const highInterest = interest >= 3;
+
+            if (highPower && !highInterest) return 'keep_satisfied';
+            if (highPower && highInterest) return 'manage_closely';
+            if (!highPower && !highInterest) return 'monitor';
+            if (!highPower && highInterest) return 'keep_informed';
+        }
+
+        function getCleanScoreBadge(power, interest) {
+            const pLabel = power >= 3 ? 'High' : 'Low';
+            const iLabel = interest >= 3 ? 'High' : 'Low';
+            return `<span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 shadow-inner">
+                Power: ${power}/5 (${pLabel}) | Interest: ${interest}/5 (${iLabel})
+            </span>`;
+        }
+
+        function getAccessibleProjects() {
+            if (currentUser.role === 'management' || currentUser.role === 'viewer') return state.projects;
+            const assigned = currentUser.assignedProjects || [];
+            return state.projects.filter(p => assigned.includes(p.id));
+        }
+
+        function getFilteredData(listKey) {
+            let list = state[listKey];
+            if (currentUser.role === 'sociologist') {
+                const assigned = currentUser.assignedProjects || [];
+                list = list.filter(item => assigned.includes(item.projectId));
+            }
+            if (state.activeProject === 'ALL') return list;
+            return list.filter(item => item.projectId === state.activeProject);
+        }
+
+        function getProjectName(pId) {
+            const prj = state.projects.find(p => p.id === pId);
+            return prj ? prj.name : 'General';
+        }
+
+        function checkCustomCategory(val) {
+            const customDiv = document.getElementById('customCategoryDiv');
+            if (val === 'Other (Custom)') {
+                customDiv.classList.remove('hidden');
+                document.getElementById('shCustomCategory').required = true;
+            } else {
+                customDiv.classList.add('hidden');
+                document.getElementById('shCustomCategory').required = false;
+            }
+        }
+
+        function toggleProjectSelectionVisibility(roleVal) {
+            const sec = document.getElementById('projectAccessSection');
+            if (roleVal === 'viewer' || roleVal === 'management') {
+                sec.style.display = 'none';
+            } else {
+                sec.style.display = 'block';
+            }
+        }
+
+        function renderProjectDropdowns() {
+            const select = document.getElementById('globalProjectSelect');
+            const shSelect = document.getElementById('shProject');
+            const grSelect = document.getElementById('grProject');
+            const engSelect = document.getElementById('engProject');
+            const quickCards = document.getElementById('projectQuickCards');
+
+            const accessible = getAccessibleProjects();
+            let prjOptions = accessible.map(p => `<option value="${p.id}" class="bg-slate-900 text-white">${p.name}</option>`).join('');
+            
+            select.innerHTML = `<option value="ALL" class="bg-slate-900 text-white">All Accessible Projects</option>` + prjOptions;
+            if (shSelect) shSelect.innerHTML = prjOptions;
+            if (grSelect) grSelect.innerHTML = prjOptions;
+            if (engSelect) engSelect.innerHTML = prjOptions;
+
+            if (state.activeProject !== 'ALL' && !accessible.some(p => p.id === state.activeProject)) {
+                state.activeProject = 'ALL';
+            }
+            select.value = state.activeProject;
+
+            quickCards.innerHTML = accessible.map(p => {
+                const count = state.stakeholders.filter(s => s.projectId === p.id).length;
+                return `
+                    <div onclick="handleProjectChange('${p.id}')" class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 hover:bg-blue-50 dark:hover:bg-blue-950/40 cursor-pointer transition flex items-center justify-between shadow-sm ${state.activeProject === p.id ? 'border-blue-500 bg-blue-50/80 dark:bg-blue-950/60' : ''}">
+                        <div class="truncate">
+                            <p class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">${p.name}</p>
+                            <p class="text-[10px] text-slate-500 dark:text-slate-400">${p.location}</p>
+                        </div>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-blue-700 dark:text-blue-300 border border-slate-300 dark:border-slate-700">${count} sh</span>
+                    </div>
+                `;
+            }).join('') || `<p class="text-xs text-slate-500 p-2 italic">No projects added yet.</p>`;
+        }
+
+        function renderDashboard() {
+            const currentStakeholders = getFilteredData('stakeholders');
+            const currentGrievances = getFilteredData('grievances');
+
+            document.getElementById('kpi-stakeholders').innerText = currentStakeholders.length;
+            const openGr = currentGrievances.filter(g => g.status !== 'Closed');
+            document.getElementById('kpi-open-grievances').innerText = openGr.length;
+
+            const criticalCount = currentGrievances.filter(g => g.severity === 'High' || g.severity === 'Critical').length;
+            document.getElementById('kpi-urgent-count').innerText = `${criticalCount} Urgent cases registered`;
+
+            const resolvedCount = currentGrievances.filter(g => g.status === 'Closed').length;
+            const rate = currentGrievances.length ? Math.round((resolvedCount / currentGrievances.length) * 100) : 100;
+            document.getElementById('kpi-resolution-rate').innerText = `${rate}%`;
+
+            const highPowerCount = currentStakeholders.filter(s => s.power >= 3 && s.interest >= 3).length;
+            document.getElementById('kpi-high-power').innerText = highPowerCount;
+
+            const recentTbody = document.getElementById('dashboardRecentTable');
+            recentTbody.innerHTML = currentGrievances.slice(0, 5).map(g => `
+                <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/60 transition">
+                    <td class="p-3 font-bold text-blue-600 dark:text-blue-400">${g.id}</td>
+                    <td class="p-3 font-medium text-slate-800 dark:text-slate-200">${getProjectName(g.projectId)}</td>
+                    <td class="p-3 text-slate-700 dark:text-slate-300">${g.category}</td>
+                    <td class="p-3 font-medium text-slate-800 dark:text-slate-200">${g.complainant}</td>
+                    <td class="p-3">${getSeverityBadge(g.severity)}</td>
+                    <td class="p-3">${getStatusBadge(g.status)}</td>
+                </tr>
+            `).join('') || `<tr><td colspan="6" class="p-4 text-center text-slate-500">No grievances recorded for this selection.</td></tr>`;
+
+            updateCharts();
+            checkPendingRequestsNotification();
+        }
+
+        function renderMatrix() {
+            const list = getFilteredData('stakeholders');
+            const quadrants = { keep_satisfied: [], manage_closely: [], monitor: [], keep_informed: [] };
+
+            list.forEach(s => {
+                const key = getQuadrantKey(s.power, s.interest);
+                if (quadrants[key]) quadrants[key].push(s);
+            });
+
+            Object.keys(quadrants).forEach(qKey => {
+                const container = document.getElementById(`quadrant-${qKey}`);
+                const countBadge = document.getElementById(`count-${qKey}`);
+                countBadge.innerText = quadrants[qKey].length;
+
+                if (quadrants[qKey].length === 0) {
+                    container.innerHTML = `<p class="text-xs text-slate-500 italic text-center py-6">No stakeholders assigned.</p>`;
+                } else {
+                    container.innerHTML = quadrants[qKey].map(s => `
+                        <div ${currentUser.role !== 'viewer' ? `draggable="true" ondragstart="dragStart(event, '${s.id}')"` : ''} 
+                             class="stakeholder-card bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700/60 p-3 rounded-xl shadow-sm dark:shadow-md transition flex flex-col justify-between space-y-2">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h5 class="text-xs font-bold text-slate-900 dark:text-white">${s.name}</h5>
+                                    <p class="text-[11px] text-slate-500 dark:text-slate-400">${s.org || 'Independent'}</p>
+                                </div>
+                                <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">${s.category}</span>
+                            </div>
+                            <div class="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
+                                ${getCleanScoreBadge(s.power, s.interest)}
+                                ${currentUser.role !== 'viewer' ? `<button onclick="openEditStakeholder('${s.id}')" class="text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold">Edit</button>` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            });
+        }
+
+        function dragStart(e, id) { draggedStakeholderId = id; e.dataTransfer.setData('text/plain', id); }
+        function allowDrop(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+        function dragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+        function dropStakeholder(e, targetQuadrant) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            if (currentUser.role === 'viewer') return;
+            if (!draggedStakeholderId) return;
+            const sh = state.stakeholders.find(s => s.id === draggedStakeholderId);
+            if (!sh) return;
+
+            if (targetQuadrant === 'keep_satisfied') { sh.power = 4; sh.interest = 2; }
+            else if (targetQuadrant === 'manage_closely') { sh.power = 4; sh.interest = 4; }
+            else if (targetQuadrant === 'monitor') { sh.power = 2; sh.interest = 2; }
+            else if (targetQuadrant === 'keep_informed') { sh.power = 2; sh.interest = 4; }
+
+            draggedStakeholderId = null;
+            saveState();
+            renderMatrix(); renderStakeholders(); updateCharts();
+        }
+
+        function renderStakeholders() {
+            let list = getFilteredData('stakeholders');
+            const search = document.getElementById('stakeholderSearch').value.toLowerCase();
+            const category = document.getElementById('stakeholderCategoryFilter').value;
+            const projectFilter = document.getElementById('stakeholderProjectFilter').value;
+
+            if (projectFilter && projectFilter !== 'ALL') {
+                list = list.filter(s => s.projectId === projectFilter);
+            }
+
+            const filtered = list.filter(s => {
+                const matchesSearch = s.name.toLowerCase().includes(search) || (s.org && s.org.toLowerCase().includes(search));
+                const matchesCat = category === 'ALL' || s.category === category;
+                return matchesSearch && matchesCat;
+            });
+
+            if (currentUser.role === 'viewer') {
+                document.getElementById('stakeholderActionHeader').style.display = 'none';
+                document.getElementById('thStakeholderActions').style.display = 'none';
+            } else {
+                document.getElementById('stakeholderActionHeader').style.display = 'block';
+                document.getElementById('thStakeholderActions').style.display = 'table-cell';
+            }
+
+            const tbody = document.getElementById('stakeholdersTableBody');
+            tbody.innerHTML = filtered.map(s => {
+                const qKey = getQuadrantKey(s.power, s.interest);
+                const qLabels = { keep_satisfied: 'Keep Satisfied', manage_closely: 'Manage Closely', monitor: 'Monitor', keep_informed: 'Keep Informed' };
+
+                let actionTd = currentUser.role === 'viewer' ? '' : `
+                    <td class="p-3 text-right space-x-2">
+                        <button onclick="openEditStakeholder('${s.id}')" class="text-blue-600 dark:text-blue-400 hover:text-blue-900 font-semibold"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deleteStakeholder('${s.id}')" class="text-rose-600 dark:text-rose-400 hover:text-rose-900 font-semibold"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+
+                return `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/60 transition">
+                        <td class="p-3"><p class="font-bold text-slate-900 dark:text-white">${s.name}</p><p class="text-[11px] text-slate-500 dark:text-slate-400">${s.org || '—'}</p></td>
+                        <td class="p-3 font-medium text-slate-700 dark:text-slate-300">${s.category}</td>
+                        <td class="p-3 text-slate-600 dark:text-slate-400">${getProjectName(s.projectId)}</td>
+                        <td class="p-3">${getCleanScoreBadge(s.power, s.interest)}</td>
+                        <td class="p-3"><span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">${qLabels[qKey]}</span></td>
+                        <td class="p-3 text-slate-600 dark:text-slate-400"><div>${s.email || 'N/A'}</div><div class="text-[10px] text-slate-500">${s.phone || ''}</div></td>
+                        ${actionTd}
+                    </tr>
+                `;
+            }).join('') || `<tr><td colspan="7" class="p-4 text-center text-slate-500">No stakeholders match criteria.</td></tr>`;
+        }
+
+        let currentGrievanceFilter = 'ALL';
+        function filterGrievanceStatus(status) {
+            currentGrievanceFilter = status;
+            document.querySelectorAll('.grievance-status-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-50', 'dark:bg-blue-950/80', 'text-blue-600', 'dark:text-blue-400', 'border', 'border-blue-200', 'dark:border-blue-800/50');
+                btn.classList.add('text-slate-600', 'dark:text-slate-400');
+            });
+            event.target.classList.add('bg-blue-50', 'dark:bg-blue-950/80', 'text-blue-600', 'dark:text-blue-400', 'border', 'border-blue-200', 'dark:border-blue-800/50');
+            event.target.classList.remove('text-slate-600', 'dark:text-slate-400');
+            renderGrievances();
+        }
+
+        function renderGrievances() {
+            let list = getFilteredData('grievances');
+            const projectFilter = document.getElementById('grievanceProjectFilter').value;
+            const yearFilter = document.getElementById('grievanceYearFilter').value;
+
+            if (projectFilter && projectFilter !== 'ALL') {
+                list = list.filter(g => g.projectId === projectFilter);
+            }
+
+            if (yearFilter && yearFilter !== 'ALL') {
+                list = list.filter(g => (g.year || (g.date ? g.date.substring(0, 4) : '2026')) === yearFilter);
+            }
+
+            const filtered = list.filter(g => currentGrievanceFilter === 'ALL' || g.status === currentGrievanceFilter);
+            
+            if (currentUser.role === 'viewer') {
+                document.getElementById('grievanceActionHeader').style.display = 'none';
+                document.getElementById('thGrievanceActions').style.display = 'none';
+            } else {
+                document.getElementById('grievanceActionHeader').style.display = 'block';
+                document.getElementById('thGrievanceActions').style.display = 'table-cell';
+            }
+
+            const tbody = document.getElementById('grievanceTableBody');
+            tbody.innerHTML = filtered.map(g => {
+                let actionBtn = currentUser.role === 'viewer' ? '' : `
+                    <button onclick="openManageGrievance('${g.id}')" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-xl font-semibold shadow-md transition">
+                        <i class="fa-solid fa-pen-to-square mr-1"></i> Update Status
+                    </button>
+                `;
+
+                return `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/60 transition">
+                        <td class="p-3 font-bold text-blue-600 dark:text-blue-400">${g.id}</td>
+                        <td class="p-3"><div class="font-medium text-slate-800 dark:text-slate-200">${getProjectName(g.projectId)}</div><div class="text-[10px] text-slate-500">${g.date} (Yr: ${g.year || '2026'})</div></td>
+                        <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${g.complainant}<br><span class="text-[10px] text-slate-500">${g.phone || ''}</span></td>
+                        <td class="p-3 max-w-xs"><span class="font-semibold text-slate-700 dark:text-slate-300">${g.category}:</span><p class="text-slate-600 dark:text-slate-400 truncate">${g.summary}</p></td>
+                        <td class="p-3">${getSeverityBadge(g.severity)}</td>
+                        <td class="p-3 space-y-1">
+                            <div>${getStatusBadge(g.status)}</div>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 italic max-w-xs">${g.resolutionNotes || 'No description yet.'}</p>
+                        </td>
+                        <td class="p-3 text-right">${actionBtn}</td>
+                    </tr>
+                `;
+            }).join('') || `<tr><td colspan="7" class="p-4 text-center text-slate-500">No grievance cases found for selected year/project.</td></tr>`;
+        }
+
+        function openManageGrievance(id) {
+            if (currentUser.role === 'viewer') return;
+            const g = state.grievances.find(x => x.id === id);
+            if (!g) return;
+            document.getElementById('manageGrId').value = g.id;
+            document.getElementById('manageGrStatus').value = g.status || 'Open';
+            document.getElementById('manageGrNotes').value = g.resolutionNotes || '';
+            openModal('manageGrievanceModal');
+        }
+
+        function saveGrievanceManagement(e) {
+            e.preventDefault();
+            if (currentUser.role === 'viewer') return;
+            const id = document.getElementById('manageGrId').value;
+            const newStatus = document.getElementById('manageGrStatus').value;
+            const notes = document.getElementById('manageGrNotes').value;
+
+            const g = state.grievances.find(x => x.id === id);
+            if (g) {
+                g.status = newStatus;
+                g.resolutionNotes = notes;
+                saveState();
+                closeModal('manageGrievanceModal');
+                renderGrievances();
+                renderDashboard();
+                alert(`Case ${g.id} updated to status "${newStatus}".\n\nAutomated SMS & Email notification dispatched to complainant (${g.phone || 'Phone'}, ${g.email || 'Email'}) containing status "${newStatus}" and description: "${notes}"`);
+            }
+        }
+
+        function renderEngagements() {
+            const list = getFilteredData('engagements');
+            if (currentUser.role === 'viewer') {
+                document.getElementById('engagementActionHeader').style.display = 'none';
+            } else {
+                document.getElementById('engagementActionHeader').style.display = 'block';
+            }
+
+            const container = document.getElementById('engagementLogList');
+            container.innerHTML = list.map(e => {
+                let minutesHtml = e.minutes ? `
+                    <div class="flex items-center space-x-2 text-xs bg-blue-50 dark:bg-blue-950/50 p-2.5 rounded-xl border border-blue-200 dark:border-blue-900/60 shadow-inner">
+                        <i class="fa-solid fa-file-lines text-blue-600 dark:text-blue-400 text-sm"></i>
+                        <div class="flex-1 truncate">
+                            <span class="font-bold text-slate-800 dark:text-slate-200">Minutes:</span> 
+                            <span class="text-blue-700 dark:text-blue-300">${e.minutes.label}</span>
+                        </div>
+                        <a href="${e.minutes.dataUrl}" download="${e.minutes.label}" class="text-[11px] bg-blue-600 text-white px-2.5 py-1 rounded-lg hover:bg-blue-500 font-semibold shadow-sm">Download</a>
+                    </div>
+                ` : '';
+
+                let attendanceHtml = e.attendance ? `
+                    <div class="flex items-center space-x-2 text-xs bg-emerald-50 dark:bg-emerald-950/50 p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-900/60 shadow-inner">
+                        <i class="fa-solid fa-users-rectangle text-emerald-600 dark:text-emerald-400 text-sm"></i>
+                        <div class="flex-1 truncate">
+                            <span class="font-bold text-slate-800 dark:text-slate-200">Attendance:</span> 
+                            <span class="text-emerald-700 dark:text-emerald-300">${e.attendance.label}</span>
+                        </div>
+                        <a href="${e.attendance.dataUrl}" download="${e.attendance.label}" class="text-[11px] bg-emerald-600 text-white px-2.5 py-1 rounded-lg hover:bg-emerald-500 font-semibold shadow-sm">Download</a>
+                    </div>
+                ` : '';
+
+                return `
+                    <div class="glass-card p-4 rounded-2xl space-y-3">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/80 px-2.5 py-0.5 rounded-lg border border-blue-200 dark:border-blue-900">${getProjectName(e.projectId)}</span>
+                                <h4 class="text-sm font-bold text-slate-900 dark:text-white mt-1.5">${e.title}</h4>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs text-slate-500 dark:text-slate-400 font-medium block"><i class="fa-regular fa-calendar mr-1"></i>${e.date}</span>
+                                <span class="text-[10px] text-blue-600 dark:text-blue-400 font-medium">Logged by: ${e.loggedBy || 'Field Team'}</span>
+                            </div>
+                        </div>
+                        <div class="text-xs text-slate-600 dark:text-slate-300 flex items-center space-x-4">
+                            <span><i class="fa-solid fa-users mr-1 text-slate-400"></i> ${e.stakeholders}</span>
+                            <span><i class="fa-solid fa-user-check mr-1 text-slate-400"></i> ${e.attendees} Attendees</span>
+                        </div>
+                        <p class="text-xs text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/80 p-3 rounded-xl border border-slate-200 dark:border-slate-800"><strong class="text-slate-900 dark:text-white">Key Outcomes:</strong> ${e.outcomes}</p>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                            ${minutesHtml}
+                            ${attendanceHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('') || `<p class="text-xs text-slate-500 italic text-center py-6">No consultation logs recorded.</p>`;
+        }
+
+        function renderTeamMembers() {
+            const tbody = document.getElementById('teamTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = state.users.map(u => {
+                const assignedNames = u.role === 'management' || u.role === 'viewer' ? 'All Enterprise Projects' : (u.assignedProjects || []).map(pId => getProjectName(pId)).join(', ');
+                const roleBadgeColor = u.role === 'management' ? 'bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700' : u.role === 'viewer' ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60' : 'bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800/60';
+                
+                let actionsHtml = '';
+                if (currentUser.role === 'management') {
+                    actionsHtml = `
+                        <button onclick="openEditUserModal('${u.id}')" title="Edit User Account" class="text-blue-600 dark:text-blue-400 hover:text-blue-900 font-semibold mr-1.5"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="directorResetUserPassword('${u.id}')" title="Reset Password" class="text-amber-600 dark:text-amber-400 hover:text-amber-900 font-semibold mr-1.5"><i class="fa-solid fa-key"></i> Reset Pass</button>
+                        ${u.id !== currentUser.id ? `<button onclick="deleteUser('${u.id}')" title="Delete User Account" class="text-rose-600 dark:text-rose-400 hover:text-rose-900 font-semibold"><i class="fa-solid fa-trash"></i></button>` : '<span class="text-xs text-slate-400 italic">Self</span>'}
+                    `;
+                } else {
+                    actionsHtml = '<span class="text-xs text-slate-400 italic">Protected</span>';
+                }
+
+                return `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/60 transition">
+                        <td class="p-3 font-bold text-slate-900 dark:text-white">${u.name}</td>
+                        <td class="p-3 font-mono text-xs text-blue-600 dark:text-blue-400">${u.username} <span class="text-[10px] text-slate-400 block">Password: ${u.pass}</span></td>
+                        <td class="p-3"><span class="px-2.5 py-1 rounded-lg text-[11px] font-bold ${roleBadgeColor}">${u.role.toUpperCase()}</span></td>
+                        <td class="p-3 text-slate-700 dark:text-slate-300 text-xs">${assignedNames || 'None'}</td>
+                        <td class="p-3 text-right space-x-1">${actionsHtml}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderPendingRequests() {
+            const sec = document.getElementById('pendingRequestsSection');
+            const tbody = document.getElementById('pendingRequestsTableBody');
+            const badge = document.getElementById('pendingRequestCountBadge');
+            if (!sec || !tbody) return;
+
+            const pending = (state.passwordRequests || []).filter(r => r.status === 'Pending');
+            if (pending.length === 0 || currentUser.role !== 'management') {
+                sec.classList.add('hidden');
+                return;
+            }
+
+            sec.classList.remove('hidden');
+            badge.innerText = `${pending.length} Pending`;
+
+            tbody.innerHTML = pending.map(r => `
+                <tr class="hover:bg-amber-50 dark:hover:bg-amber-950/40 transition">
+                    <td class="p-3 font-mono text-slate-600 dark:text-slate-400">${r.timestamp}</td>
+                    <td class="p-3 font-bold text-amber-700 dark:text-amber-400">${r.userIdentifier}</td>
+                    <td class="p-3 text-slate-700 dark:text-slate-300">${r.note}</td>
+                    <td class="p-3 text-right">
+                        <button onclick="directorFulfillPasswordRequest('${r.id}', '${r.userIdentifier}')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl transition shadow">
+                            <i class="fa-solid fa-key mr-1"></i> Reset Password Now
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function directorFulfillPasswordRequest(reqId, userIdentifier) {
+            if (currentUser.role !== 'management') return;
+            
+            const matchedUser = state.users.find(u => u.username.toLowerCase() === userIdentifier.toLowerCase() || u.name.toLowerCase().includes(userIdentifier.toLowerCase()));
+            const targetId = matchedUser ? matchedUser.id : null;
+
+            if (targetId) {
+                directorResetUserPassword(targetId);
+            } else {
+                const manualUser = prompt(`Select user account to reset password for "${userIdentifier}":`, state.users[1] ? state.users[1].username : 'field_staff');
+                if (manualUser) {
+                    const u = state.users.find(x => x.username.toLowerCase() === manualUser.toLowerCase());
+                    if (u) directorResetUserPassword(u.id);
+                }
+            }
+
+            const reqObj = state.passwordRequests.find(r => r.id === reqId);
+            if (reqObj) reqObj.status = 'Fulfilled';
+            saveState();
+            renderPendingRequests();
+            checkPendingRequestsNotification();
+        }
+
+        function renderPasswordResetLogs() {
+            const tbody = document.getElementById('passwordResetAuditTable');
+            if (!tbody) return;
+            const logs = state.passwordResetLogs || [];
+            tbody.innerHTML = logs.map(l => `
+                <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/60 transition">
+                    <td class="p-2.5 font-mono text-slate-500 dark:text-slate-400">${l.timestamp}</td>
+                    <td class="p-2.5 font-bold text-blue-600 dark:text-blue-400">${l.username}</td>
+                    <td class="p-2.5 text-slate-700 dark:text-slate-300">${l.action}</td>
+                    <td class="p-2.5 font-mono text-emerald-600 dark:text-emerald-400 font-bold">${l.tempPass}</td>
+                </tr>
+            `).join('') || `<tr><td colspan="4" class="p-3 text-center text-slate-500 italic">No password resets logged.</td></tr>`;
+        }
+
+        function openCreateUserModal() {
+            if (currentUser.role !== 'management') return alert('Only Director/Management can add users.');
+            document.getElementById('userModalTitle').innerHTML = '<i class="fa-solid fa-user-plus mr-2 text-blue-400"></i> Create System User Account';
+            document.getElementById('userEditId').value = '';
+            document.getElementById('userForm').reset();
+            document.getElementById('newUserPassword').value = 'JohnGeo2026!';
+            prepareUserModal();
+            openModal('addUserModal');
+        }
+
+        function openEditUserModal(id) {
+            if (currentUser.role !== 'management') return alert('Only Director/Management can edit user accounts.');
+            const u = state.users.find(x => x.id === id);
+            if (!u) return;
+
+            document.getElementById('userModalTitle').innerHTML = '<i class="fa-solid fa-user-pen mr-2 text-blue-400"></i> Edit User Account & Access';
+            document.getElementById('userEditId').value = u.id;
+            document.getElementById('newUserName').value = u.name;
+            document.getElementById('newUserUsername').value = u.username;
+            document.getElementById('newUserPassword').value = u.pass;
+            document.getElementById('newUserRole').value = u.role;
+
+            prepareUserModal();
+
+            if (u.role === 'sociologist') {
+                const assigned = u.assignedProjects || [];
+                document.querySelectorAll('input[name="newUserPrj"]').forEach(cb => {
+                    cb.checked = assigned.includes(cb.value);
+                });
+            }
+
+            toggleProjectSelectionVisibility(u.role);
+            openModal('addUserModal');
+        }
+
+        function prepareUserModal() {
+            const container = document.getElementById('userProjectsCheckboxes');
+            if (!container) return;
+            container.innerHTML = state.projects.map(p => `
+                <label class="flex items-center space-x-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <input type="checkbox" name="newUserPrj" value="${p.id}" class="accent-blue-600 rounded">
+                    <span>${p.name} (${p.location})</span>
+                </label>
+            `).join('');
+            const role = document.getElementById('newUserRole').value;
+            toggleProjectSelectionVisibility(role);
+        }
+
+        function saveUserAccount(e) {
+            e.preventDefault();
+            if (currentUser.role !== 'management') return alert('Only Director/Management can modify accounts.');
+            
+            const editId = document.getElementById('userEditId').value;
+            const role = document.getElementById('newUserRole').value;
+            const checkedProjects = role === 'sociologist' ? Array.from(document.querySelectorAll('input[name="newUserPrj"]:checked')).map(cb => cb.value) : ['ALL'];
+
+            const userObj = {
+                id: editId || 'u' + (state.users.length + 1),
+                name: document.getElementById('newUserName').value,
+                username: document.getElementById('newUserUsername').value.trim().toLowerCase(),
+                role: role,
+                pass: document.getElementById('newUserPassword').value.trim(),
+                assignedProjects: checkedProjects
+            };
+
+            if (editId) {
+                const idx = state.users.findIndex(x => x.id === editId);
+                if (idx !== -1) state.users[idx] = userObj;
+            } else {
+                state.users.push(userObj);
+            }
+
+            saveState();
+            closeModal('addUserModal');
+            document.getElementById('userForm').reset();
+            renderTeamMembers();
+            alert(`User account "${userObj.name}" saved successfully!\n\nCredentials: Username: ${userObj.username} | Password: ${userObj.pass}`);
+        }
+
+        function directorResetUserPassword(id) {
+            if (currentUser.role !== 'management') return;
+            const u = state.users.find(x => x.id === id);
+            if (!u) return;
+            const newPass = 'pass_' + Math.random().toString(36).substring(2, 8);
+            u.pass = newPass;
+            
+            if (!state.passwordResetLogs) state.passwordResetLogs = [];
+            const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
+            state.passwordResetLogs.unshift({ timestamp: nowStr, username: u.username, action: 'Director Reset Password', tempPass: newPass });
+
+            saveState();
+            renderTeamMembers();
+            renderPasswordResetLogs();
+            alert(`Director Reset Executed!\n\nNew login password for ${u.name} (${u.username}): ${newPass}`);
+        }
+
+        function deleteUser(id) {
+            if (currentUser.role !== 'management') return;
+            if (id === currentUser.id) return alert('You cannot delete your own logged-in Director account.');
+            if (confirm('Are you sure you want to delete this user account?')) {
+                state.users = state.users.filter(u => u.id !== id);
+                saveState();
+                renderTeamMembers();
+            }
+        }
+
+        function getSeverityBadge(sev) {
+            const map = {
+                Low: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700',
+                Medium: 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800/60',
+                High: 'bg-orange-100 dark:bg-orange-950/80 text-orange-800 dark:text-orange-300 border-orange-300 dark:border-orange-800/60',
+                Critical: 'bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-800/60'
+            };
+            return `<span class="px-2.5 py-1 rounded-lg text-[11px] font-bold border ${map[sev] || map.Medium}">${sev}</span>`;
+        }
+
+        function getStatusBadge(st) {
+            const map = { 
+                Open: 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60', 
+                Investigation: 'bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800/60', 
+                Review: 'bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700',
+                Closed: 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60' 
+            };
+            return `<span class="px-2.5 py-1 rounded-xl text-[11px] font-bold ${map[st] || 'bg-slate-100'}">${st}</span>`;
+        }
+
+        function updateScoreLabels() {
+            const pVal = parseInt(document.getElementById('shPower').value);
+            const iVal = parseInt(document.getElementById('shInterest').value);
+            document.getElementById('shPowerVal').innerText = `Score: ${pVal} (${pVal >= 3 ? 'High' : 'Low'})`;
+            document.getElementById('shInterestVal').innerText = `Score: ${iVal} (${iVal >= 3 ? 'High' : 'Low'})`;
+        }
+
+        function openModal(id) { 
+            const modalEl = document.getElementById(id);
+            if (modalEl) modalEl.classList.remove('hidden'); 
+        }
+        function closeModal(id) { 
+            const modalEl = document.getElementById(id);
+            if (modalEl) modalEl.classList.add('hidden'); 
+        }
+
+        function saveStakeholder(e) {
+            e.preventDefault();
+            if (currentUser.role === 'viewer') return alert('View-only accounts cannot modify stakeholders.');
+            const editId = document.getElementById('stakeholderEditId').value;
+            const catSelect = document.getElementById('shCategory').value;
+            const finalCategory = catSelect === 'Other (Custom)' ? document.getElementById('shCustomCategory').value : catSelect;
+
+            const data = {
+                id: editId || 'S' + (state.stakeholders.length + 1),
+                name: document.getElementById('shName').value,
+                org: document.getElementById('shOrg').value,
+                category: finalCategory,
+                projectId: document.getElementById('shProject').value,
+                power: parseInt(document.getElementById('shPower').value),
+                interest: parseInt(document.getElementById('shInterest').value),
+                email: document.getElementById('shEmail').value,
+                phone: document.getElementById('shPhone').value
+            };
+
+            if (editId) {
+                const idx = state.stakeholders.findIndex(s => s.id === editId);
+                if (idx !== -1) state.stakeholders[idx] = data;
+            } else {
+                state.stakeholders.push(data);
+            }
+
+            saveState();
+            closeModal('addStakeholderModal');
+            document.getElementById('stakeholderForm').reset();
+            document.getElementById('stakeholderEditId').value = '';
+            document.getElementById('customCategoryDiv').classList.add('hidden');
+            
+            renderStakeholders(); renderMatrix(); renderDashboard(); renderProjectDropdowns();
+        }
+
+        function openEditStakeholder(id) {
+            if (currentUser.role === 'viewer') return;
+            const s = state.stakeholders.find(x => x.id === id);
+            if (!s) return;
+
+            document.getElementById('stakeholderEditId').value = s.id;
+            document.getElementById('shName').value = s.name;
+            document.getElementById('shOrg').value = s.org || '';
+            
+            const catDropdown = document.getElementById('shCategory');
+            const customDiv = document.getElementById('customCategoryDiv');
+            let optionExists = Array.from(catDropdown.options).some(o => o.value === s.category);
+            
+            if (optionExists) {
+                catDropdown.value = s.category;
+                customDiv.classList.add('hidden');
+            } else {
+                catDropdown.value = 'Other (Custom)';
+                customDiv.classList.remove('hidden');
+                document.getElementById('shCustomCategory').value = s.category;
+            }
+
+            document.getElementById('shProject').value = s.projectId;
+            document.getElementById('shPower').value = s.power;
+            document.getElementById('shInterest').value = s.interest;
+            document.getElementById('shEmail').value = s.email || '';
+            document.getElementById('shPhone').value = s.phone || '';
+
+            updateScoreLabels();
+            openModal('addStakeholderModal');
+        }
+
+        function deleteStakeholder(id) {
+            if (currentUser.role === 'viewer') return;
+            state.stakeholders = state.stakeholders.filter(s => s.id !== id);
+            saveState();
+            renderStakeholders(); renderMatrix(); renderDashboard();
+        }
+
+        function saveGrievance(e) {
+            e.preventDefault();
+            if (currentUser.role === 'viewer') return alert('View-only accounts cannot log grievances.');
+            const currentDate = new Date().toISOString().split('T')[0];
+            const currentYear = currentDate.substring(0, 4);
+
+            const data = {
+                id: 'GR-' + (100 + state.grievances.length + 1),
+                projectId: document.getElementById('grProject').value,
+                complainant: document.getElementById('grComplainant').value,
+                phone: document.getElementById('grPhone').value || 'N/A',
+                email: document.getElementById('grEmail').value || 'N/A',
+                category: document.getElementById('grCategory').value,
+                severity: document.getElementById('grSeverity').value,
+                summary: document.getElementById('grSummary').value,
+                status: 'Open',
+                resolutionNotes: 'Grievance registered. Management has assigned for review.',
+                date: currentDate,
+                year: currentYear
+            };
+
+            state.grievances.unshift(data);
+            triggerNewGrievanceAlert(data);
+            saveState();
+
+            closeModal('addGrievanceModal');
+            document.getElementById('grievanceForm').reset();
+            renderGrievances(); renderDashboard();
+            alert(`Grievance ${data.id} successfully registered. SMS & Email alert sent to complainant confirming status "Open".`);
+        }
+
+        function saveEngagement(e) {
+            e.preventDefault();
+            if (currentUser.role === 'viewer') return alert('View-only accounts cannot log meetings.');
+            const minutesFile = document.getElementById('minutesFile').files[0];
+            const minutesLabel = document.getElementById('minutesLabel').value || 'Meeting Minutes Document';
+
+            const attendanceFile = document.getElementById('attendanceFile').files[0];
+            const attendanceLabel = document.getElementById('attendanceLabel').value || 'Attendance Sign-in Sheet';
+
+            let minutesData = null;
+            let attendanceData = null;
+
+            let pendingReads = 0;
+            if (minutesFile) pendingReads++;
+            if (attendanceFile) pendingReads++;
+
+            if (pendingReads === 0) {
+                finalizeEngagement(null, null);
+                return;
+            }
+
+            if (minutesFile) {
+                const readerMin = new FileReader();
+                readerMin.onload = function(evt) {
+                    minutesData = { label: minutesLabel, dataUrl: evt.target.result };
+                    checkAndFinalize();
+                };
+                readerMin.readAsDataURL(minutesFile);
+            }
+
+            if (attendanceFile) {
+                const readerAtt = new FileReader();
+                readerAtt.onload = function(evt) {
+                    attendanceData = { label: attendanceLabel, dataUrl: evt.target.result };
+                    checkAndFinalize();
+                };
+                readerAtt.readAsDataURL(attendanceFile);
+            }
+
+            function checkAndFinalize() {
+                pendingReads--;
+                if (pendingReads === 0) {
+                    finalizeEngagement(minutesData, attendanceData);
+                }
+            }
+        }
+
+        function finalizeEngagement(minutesObj, attendanceObj) {
+            const data = {
+                id: 'E' + (state.engagements.length + 1),
+                projectId: document.getElementById('engProject').value,
+                date: document.getElementById('engDate').value,
+                title: document.getElementById('engTitle').value,
+                stakeholders: document.getElementById('engStakeholders').value,
+                attendees: document.getElementById('engAttendees').value,
+                outcomes: document.getElementById('engOutcomes').value,
+                loggedBy: currentUser.name,
+                minutes: minutesObj,
+                attendance: attendanceObj
+            };
+            state.engagements.unshift(data);
+            saveState();
+            closeModal('addEngagementModal');
+            document.getElementById('engagementForm').reset();
+            renderEngagements();
+        }
+
+        function saveProject(e) {
+            e.preventDefault();
+            if (currentUser.role !== 'management') return alert('Only Director/Management can add new projects.');
+            const newPrj = {
+                id: 'P' + (state.projects.length + 1),
+                name: document.getElementById('prjName').value,
+                location: document.getElementById('prjLocation').value || 'General'
+            };
+            state.projects.push(newPrj);
+            saveState();
+            closeModal('addProjectModal');
+            document.getElementById('projectForm').reset();
+            renderProjectDropdowns();
+            populateFilterDropdowns();
+            populatePublicProjectDropdown();
+        }
+
+        function initCharts() {
+            const ctxCat = document.getElementById('grievanceCategoryChart').getContext('2d');
+            catChartInstance = new Chart(ctxCat, {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { 
+                            position: 'bottom',
+                            labels: { color: state.theme === 'dark' ? '#cbd5e1' : '#334155', font: { size: 11 } }
+                        } 
+                    }, 
+                    scales: { 
+                        y: { beginAtZero: true, ticks: { precision: 0, color: state.theme === 'dark' ? '#cbd5e1' : '#334155' }, grid: { color: state.theme === 'dark' ? 'rgba(51, 65, 85, 0.4)' : '#e2e8f0' } },
+                        x: { ticks: { color: state.theme === 'dark' ? '#cbd5e1' : '#334155' }, grid: { color: state.theme === 'dark' ? 'rgba(51, 65, 85, 0.4)' : '#e2e8f0' } }
+                    } 
+                }
+            });
+
+            const ctxQuad = document.getElementById('stakeholderQuadrantChart').getContext('2d');
+            quadChartInstance = new Chart(ctxQuad, {
+                type: 'doughnut',
+                data: { labels: [], datasets: [] },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { 
+                            position: 'bottom',
+                            labels: { color: state.theme === 'dark' ? '#cbd5e1' : '#334155', font: { size: 11 } }
+                        } 
+                    } 
+                }
+            });
+            updateCharts();
+        }
+
+        function updateCharts() {
+            if (!catChartInstance || !quadChartInstance) return;
+            const isDark = state.theme === 'dark';
+            const textColor = isDark ? '#cbd5e1' : '#334155';
+            const gridColor = isDark ? 'rgba(51, 65, 85, 0.4)' : '#e2e8f0';
+
+            const grievances = getFilteredData('grievances');
+            const categories = ['Land Compensation', 'Environmental', 'Labor & Safety', 'Community Access'];
+            
+            const openData = categories.map(c => grievances.filter(g => g.category.includes(c) && g.status !== 'Closed').length);
+            const resolvedData = categories.map(c => grievances.filter(g => g.category.includes(c) && g.status === 'Closed').length);
+
+            catChartInstance.options.plugins.legend.labels.color = textColor;
+            catChartInstance.options.scales.y.ticks.color = textColor;
+            catChartInstance.options.scales.y.grid.color = gridColor;
+            catChartInstance.options.scales.x.ticks.color = textColor;
+            catChartInstance.options.scales.x.grid.color = gridColor;
+
+            catChartInstance.data = {
+                labels: ['Land', 'Environmental', 'Labor', 'Access'],
+                datasets: [
+                    { label: 'Active / Open', data: openData, backgroundColor: '#f59e0b' },
+                    { label: 'Closed', data: resolvedData, backgroundColor: '#10b981' }
+                ]
+            };
+            catChartInstance.update();
+
+            const stakeholders = getFilteredData('stakeholders');
+            const counts = {
+                'Keep Satisfied': stakeholders.filter(s => s.power >= 3 && s.interest < 3).length,
+                'Manage Closely': stakeholders.filter(s => s.power >= 3 && s.interest >= 3).length,
+                'Monitor': stakeholders.filter(s => s.power < 3 && s.interest < 3).length,
+                'Keep Informed': stakeholders.filter(s => s.power < 3 && s.interest >= 3).length
+            };
+
+            quadChartInstance.options.plugins.legend.labels.color = textColor;
+            quadChartInstance.data = {
+                labels: Object.keys(counts),
+                datasets: [{ data: Object.values(counts), backgroundColor: ['#f97316', '#f43f5e', '#10b981', '#eab308'] }]
+            };
+            quadChartInstance.update();
+        }
+
+        /* END-OF-YEAR EXPORT FUNCTIONS */
+        function exportAnnualGrievancesExcel() {
+            const targetYear = document.getElementById('archiveYearSelect').value;
+            let list = getFilteredData('grievances');
+            if (targetYear !== 'ALL') {
+                list = list.filter(g => (g.year || (g.date ? g.date.substring(0, 4) : '2026')) === targetYear);
+            }
+
+            if (list.length === 0) {
+                return alert(`No grievances recorded for year ${targetYear}.`);
+            }
+
+            const wb = XLSX.utils.book_new();
+            const exportData = list.map(g => ({
+                'Case ID': g.id,
+                'Year Category': g.year || (g.date ? g.date.substring(0, 4) : '2026'),
+                'Date Logged': g.date,
+                'Project Name': getProjectName(g.projectId),
+                'Complainant Name': g.complainant,
+                'Phone': g.phone || 'N/A',
+                'Email': g.email || 'N/A',
+                'Grievance Category': g.category,
+                'Severity': g.severity,
+                'Current Status': g.status,
+                'Issue Summary': g.summary,
+                'Resolution & Management Notes': g.resolutionNotes
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            XLSX.utils.book_append_sheet(wb, ws, `Grievances_${targetYear}`);
+            XLSX.writeFile(wb, `${branding.title.replace(/\s+/g, '_')}_Grievances_Archive_Year_${targetYear}.xlsx`);
+        }
+
+        function exportAnnualGrievancesWord() {
+            const targetYear = document.getElementById('archiveYearSelect').value;
+            let list = getFilteredData('grievances');
+            if (targetYear !== 'ALL') {
+                list = list.filter(g => (g.year || (g.date ? g.date.substring(0, 4) : '2026')) === targetYear);
+            }
+
+            if (list.length === 0) {
+                return alert(`No grievances recorded for year ${targetYear}.`);
+            }
+
+            let htmlContent = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head><title>${branding.title} Annual Grievances Report - ${targetYear}</title><style>body{font-family:'Arial',sans-serif;color:#333;line-height:1.4;} h1{color:#1e293b;} h2{color:#475569;border-bottom:1px solid #cbd5e1;padding-bottom:4px;} table{width:100%;border-collapse:collapse;margin-bottom:20px;} th,td{border:1px solid #cbd5e1;padding:8px;font-size:11px;text-align:left;} th{background-color:#1e293b;color:white;}</style></head>
+                <body>
+                    <h1>${branding.title} - End-of-Year Grievance Report (${targetYear})</h1>
+                    <p><strong>Generated On:</strong> ${new Date().toLocaleDateString()} | <strong>Target Year Scope:</strong> ${targetYear} | <strong>Total Cases:</strong> ${list.length}</p>
+                    
+                    <h2>Year ${targetYear} Grievances Register</h2>
+                    <table>
+                        <tr><th>Case ID</th><th>Date Logged</th><th>Project</th><th>Complainant</th><th>Category</th><th>Severity</th><th>Status</th><th>Summary & Resolution Description</th></tr>
+                        ${list.map(g => `<tr><td>${g.id}</td><td>${g.date}</td><td>${getProjectName(g.projectId)}</td><td>${g.complainant}</td><td>${g.category}</td><td>${g.severity}</td><td><strong>${g.status}</strong></td><td>${g.summary}<br><em>Note: ${g.resolutionNotes}</em></td></tr>`).join('')}
+                    </table>
+                </body>
+                </html>
+            `;
+
+            const blob = new Blob(['\ufeff' + htmlContent], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${branding.title.replace(/\s+/g, '_')}_Grievances_Report_Year_${targetYear}.doc`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function exportExcelWorkbook() {
+            const wb = XLSX.utils.book_new();
+
+            const stakeholdersData = getFilteredData('stakeholders').map(s => ({
+                'Stakeholder ID': s.id,
+                'Full Name': s.name,
+                'Organization': s.org || 'N/A',
+                'Category': s.category,
+                'Project': getProjectName(s.projectId),
+                'Power Score (1-5)': s.power,
+                'Interest Score (1-5)': s.interest,
+                'Matrix Quadrant': getQuadrantKey(s.power, s.interest),
+                'Email': s.email || 'N/A',
+                'Phone': s.phone || 'N/A'
+            }));
+            const wsStakeholders = XLSX.utils.json_to_sheet(stakeholdersData);
+            XLSX.utils.book_append_sheet(wb, wsStakeholders, "Stakeholders");
+
+            const grievancesData = getFilteredData('grievances').map(g => ({
+                'Case ID': g.id,
+                'Year': g.year || '2026',
+                'Project': getProjectName(g.projectId),
+                'Complainant': g.complainant,
+                'Category': g.category,
+                'Severity': g.severity,
+                'Status': g.status,
+                'Resolution Notes': g.resolutionNotes,
+                'Date Logged': g.date,
+                'Summary': g.summary
+            }));
+            const wsGrievances = XLSX.utils.json_to_sheet(grievancesData);
+            XLSX.utils.book_append_sheet(wb, wsGrievances, "Grievances");
+
+            const engagementsData = getFilteredData('engagements').map(e => ({
+                'Log ID': e.id,
+                'Project': getProjectName(e.projectId),
+                'Meeting Date': e.date,
+                'Consultation Title': e.title,
+                'Stakeholder Group': e.stakeholders,
+                'Attendees Count': e.attendees,
+                'Logged By': e.loggedBy,
+                'Minutes Label': e.minutes ? e.minutes.label : 'None',
+                'Attendance Label': e.attendance ? e.attendance.label : 'None',
+                'Key Outcomes': e.outcomes
+            }));
+            const wsEngagements = XLSX.utils.json_to_sheet(engagementsData);
+            XLSX.utils.book_append_sheet(wb, wsEngagements, "Engagement Logs");
+
+            XLSX.writeFile(wb, `${branding.title.replace(/\s+/g, '_')}_Report_${state.activeProject}.xlsx`);
+        }
+
+        function exportWordDocument() {
+            const stakeholders = getFilteredData('stakeholders');
+            const grievances = getFilteredData('grievances');
+            const engagements = getFilteredData('engagements');
+
+            let htmlContent = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head><title>${branding.title} Executive Report</title><style>body{font-family:'Arial',sans-serif;color:#333;line-height:1.4;} h1{color:#1e293b;} h2{color:#475569;border-bottom:1px solid #cbd5e1;padding-bottom:4px;} table{width:100%;border-collapse:collapse;margin-bottom:20px;} th,td{border:1px solid #cbd5e1;padding:8px;font-size:12px;text-align:left;} th{background-color:#1e293b;color:white;}</style></head>
+                <body>
+                    <h1>${branding.title} Compliance Report</h1>
+                    <p><strong>Generated On:</strong> ${new Date().toLocaleDateString()} | <strong>Project Scope:</strong> ${getProjectName(state.activeProject)}</p>
+                    
+                    <h2>1. Executive Summary & KPIs</h2>
+                    <ul>
+                        <li><strong>Total Stakeholders Tracked:</strong> ${stakeholders.length}</li>
+                        <li><strong>Open Grievances:</strong> ${grievances.filter(g => g.status !== 'Closed').length}</li>
+                        <li><strong>Total Engagements Logged:</strong> ${engagements.length}</li>
+                    </ul>
+
+                    <h2>2. Grievance Redress Pipeline Summary</h2>
+                    <table>
+                        <tr><th>Case ID</th><th>Year</th><th>Project</th><th>Complainant</th><th>Category</th><th>Severity</th><th>Status & Description</th><th>Date</th></tr>
+                        ${grievances.map(g => `<tr><td>${g.id}</td><td>${g.year || '2026'}</td><td>${getProjectName(g.projectId)}</td><td>${g.complainant}</td><td>${g.category}</td><td>${g.severity}</td><td><strong>${g.status}</strong>: ${g.resolutionNotes}</td><td>${g.date}</td></tr>`).join('')}
+                    </table>
+
+                    <h2>3. Stakeholder Engagement Logs</h2>
+                    <table>
+                        <tr><th>Title</th><th>Date</th><th>Group</th><th>Attendees</th><th>Logged By</th><th>Outcomes</th></tr>
+                        ${engagements.map(e => `<tr><td>${e.title}</td><td>${e.date}</td><td>${e.stakeholders}</td><td>${e.attendees}</td><td>${e.loggedBy}</td><td>${e.outcomes}</td></tr>`).join('')}
+                    </table>
+                </body>
+                </html>
+            `;
+
+            const blob = new Blob(['\ufeff' + htmlContent], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${branding.title.replace(/\s+/g, '_')}_Report_${state.activeProject}.doc`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function exportDashboardPDF() {
+            const element = document.getElementById('pdfReportContainer');
+            const opt = {
+                margin:       10,
+                filename:     `${branding.title.replace(/\s+/g, '_')}_Dashboard_${state.activeProject}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().from(element).set(opt).save();
+        }
+
+        function exportFullReport() { exportExcelWorkbook(); }
+    </script>
+</body>
+</html>
